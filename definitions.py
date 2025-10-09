@@ -56,16 +56,29 @@ def generate_random_graph(n, m):
             v_colors.add(random.choice(colors))
         g.add_vertex(i, v_colors)
     
-    for i in range(num_edges):
+    if num_vertices < 2:
+        return g
+    
+    added = set()
+    possible = list(g.V.keys())
+    max_edges = num_vertices * (num_vertices - 1) // 2
+    num_edges = min(num_edges, max_edges)
+    tries = 0
+    max_tries = 1000
+
+    while len(added) < num_edges and tries < max_tries:
+        tries += 1
         e_colors = set()
         num_colors = random.randint(1, 6)
         while len(e_colors) != num_colors:
             e_colors.add(random.choice(colors))
         # todo: krawędzie nie powinny się powtarzać
-        end1_id, end2_id = random.randint(0, num_vertices - 1), random.randint(0, num_vertices - 1)
-        if end1_id != end2_id:
+        end1_id, end2_id = random.sample(possible, 2)
+        edge = tuple(sorted((end1_id, end2_id)))
+        if edge not in added:
+            added.add(edge)
             g.add_edge(end1_id, end2_id, e_colors)
-    
+
     return g
 
 g = Graph()
