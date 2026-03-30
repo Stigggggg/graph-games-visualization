@@ -26,7 +26,7 @@ export function generateRandomGraph(n: number, m: number): Graph { //n - number 
     // checking if given m doesn't exceed the maximum number of edges
     const maxEdges = n * n; // should be n * (n - 1) but we allow a->a edges
     if (m > maxEdges) {
-        throw new Error(`Error: for ${n} vertices maximum number of edges is ${maxEdges}`);
+        throw new Error(`Error: for ${n} maximum number of edges is ${maxEdges}`);
     }
     
     // creating an object that will store our generated graph

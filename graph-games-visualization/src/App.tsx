@@ -5,9 +5,10 @@ import { Graph } from './Graph'
 function App() {
     const [g1, setG1] = useState(parseToCytoscope(generateRandomGraph(6, 8)));
     const [g2, setG2] = useState(parseToCytoscope(generateRandomGraph(6, 8)));
-    const [V, setV] = useState(6);
-    const [E, setE] = useState(8);
+    const [V, setV] = useState<number | ''>('');
+    const [E, setE] = useState<number | ''>('');
     const [gameStarted, setGameStarted] = useState(false);
+    const [errorMessage, setErrorMessage] = useState('');
 
     return (
       <div className='app-container'>
@@ -30,19 +31,28 @@ function App() {
               <div className='nodes-number'>
                 <label>
                   Number of vertices (n): 
-                  <input type='number' min='1' max='10' value={V} onChange={(e) => setV(Number(e.target.value))}/>
+                  <input type='number' min='1' max='10' value={V} onChange={(e) => setV(e.target.value === '' ? '' : Number(e.target.value))}/>
                 </label>
               </div>
               <div className='edges-number'>
                 <label>
                   Number of edges (m): 
-                  <input type='number' min='0' max={V * V} value={E} onChange={(e) => setE(Number(e.target.value))}/>
+                  <input type='number' min='0' max={V === '' ? 0 : V * V} value={E} onChange={(e) => setE(e.target.value === '' ? '' : Number(e.target.value))}/>
                 </label>
               </div>
+              <div className='error-message'>{errorMessage}</div>
               <button onClick={() => {
-                setG1(parseToCytoscope(generateRandomGraph(V, E)));
-                setG2(parseToCytoscope(generateRandomGraph(V, E)));
-                setGameStarted(true);
+                try {
+                  setErrorMessage('');
+                  if (V === '' || E === '') {
+                    throw new Error("Insert the number of vertices and edges!");
+                  }
+                  setG1(parseToCytoscope(generateRandomGraph(V, E)));
+                  setG2(parseToCytoscope(generateRandomGraph(V, E)));
+                  setGameStarted(true);
+                } catch (error: any) {
+                  setErrorMessage(error.message);
+                }
               }}>Start Game</button>
           </div>
         )}
