@@ -20,10 +20,13 @@ export function Graph({ data, color }: GraphProps) {
           selector: 'node',
           style: {
             'background-color': color,
-            'label': 'data(id)',
+            'label': (e: any) => `${e.data('id')}, ${e.data('color')}`,
             'color': '#fff',
             'text-valign': 'center',
             'text-halign': 'center',
+            'width': '45px',
+            'height': '45px',
+            'font-size': '14px'
           }
         },
         {
