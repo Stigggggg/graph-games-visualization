@@ -4,9 +4,10 @@ import { useEffect, useRef } from 'react';
 export interface GraphProps {
   data: any[];
   color: string;
+  nodeClick?: (nodeId: string) => void;
 }
 
-export function Graph({ data, color }: GraphProps) {
+export function Graph({ data, color, nodeClick }: GraphProps) {
   const cyContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -55,11 +56,11 @@ export function Graph({ data, color }: GraphProps) {
       }
     });
 
-    cy.on('mouseover', 'node, edge', (e) => {
-      e.target.addClass('hovered');
-    });
-    cy.on('mouseout', 'node, edge', (e) => {
-      e.target.removeClass('hovered');
+    cy.on('tap', 'node', (e) => {
+        const nodeId = e.target.id();
+        if (nodeClick) {
+            nodeClick(nodeId)
+        }
     });
 
     return () => {

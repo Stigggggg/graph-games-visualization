@@ -18,6 +18,7 @@ function MenuEF() {
     const navigate = useNavigate();
     const [V, setV] = useState<number | ''>('');
     const [E, setE] = useState<number | ''>('');
+    const [rounds, setRounds] = useState<number>(3);
     const [errorMessage, setErrorMessage] = useState('');
 
     const handler = async () => {
@@ -30,7 +31,7 @@ function MenuEF() {
             const response = await fetch('http://127.0.0.1:5000/generate-ef', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ n: V, m: E })
+                body: JSON.stringify({ n: V, m: E, rounds: rounds })
             });
 
             const data = await response.json();
@@ -39,7 +40,7 @@ function MenuEF() {
             }
 
             navigate('/ef', {
-              state: { g1: data.g1, g2: data.g2, vertices: V, edges: E }
+              state: {game_id: data.game_id, g1: data.g1, g2: data.g2, maxRounds: rounds }
             });
         } catch (e: any) {
           setErrorMessage(e.message);
@@ -65,6 +66,13 @@ function MenuEF() {
                 </label>
               </div>
 
+              <div className='rounds-number'>
+                <label>
+                  Number of rounds: 
+                  <input type='number' min='3' max='10' value={rounds} onChange={(e) => setRounds(Number(e.target.value))}/>
+                </label>
+              </div>
+
               <div className='error-message'>{errorMessage}</div>
 
               <button onClick={handler}>Start game</button>
@@ -76,7 +84,9 @@ function MenuEF() {
 function GameEF() {
     const navigate = useNavigate();
     const location = useLocation();
-    const state = location.state as { g1: any[], g2: any[], vertices: number, edges: number } | null;
+    const state = location.state as any;
+    const [status, setStatus] = useState('playing');
+    const [message, setMessage] = useState('');
 
     if (!state) {
         return (
@@ -85,6 +95,36 @@ function GameEF() {
                 <button onClick={() => navigate('/menu-ef')}>Back to settings</button>
             </div>
         );
+    }
+
+    const move = async (graphId: string, nodeId: string) => {
+        if (status == 'game_over') {
+            return;
+        }
+
+        try {
+            const response = await fetch('http://127.0.0.1:5000/move', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    game_id: state.game_id,
+                    graph_id: graphId,
+                    node_id: nodeId
+                })
+            });
+            const data = await response.json();
+
+            if (!response.ok) {
+                alert(data.error);
+                return;
+            }
+
+            if (data.status == 'game_over') {
+                setStatus('game_over');
+            }
+        } catch (e) {
+            console.error(e);
+        }
     }
 
     return (

@@ -120,16 +120,15 @@ def move():
             game['moves_g1'].append(node_id)
         else:
             game['moves_g2'].append(node_id)
-        game['turn'] = 'duplicator'
     
     survives, message = check_iso(game['g1'], game['g2'], game['moves_g1'], game['moves_g2'])
     if not survives:
         game['status'] = 'spoiler_wins'
         return jsonify({'status': 'game_over', 'winner': 'spoiler', 'reason': message})
-    game['current_round'] + 1
+    game['current_round'] += 1
     game['turn'] = 'spoiler'
     
-    if game['current_round'] > game['max_rounds']:
+    if game['current_round'] > game['rounds']:
         game['status'] = 'duplicator_won'
         return jsonify({'status': 'game_over', 'winner': 'duplicator', 'reason': 'Duplicator survived for all rounds'})
     
