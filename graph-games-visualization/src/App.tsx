@@ -118,6 +118,7 @@ function GameEF() {
                 alert(data.error);
                 return;
             }
+            setMessage(data.message || `Winner: ${data.winner}, Reason: ${data.reason}`);
 
             if (data.status == 'game_over') {
                 setStatus('game_over');
@@ -130,14 +131,18 @@ function GameEF() {
     return (
         <div className='app-container'>
            <h1>EF Game</h1>
+           {/* Pasek wyświetlający aktualny stan gry */}
+           <div style={{ background: '#fff', padding: '10px 20px', borderRadius: '5px', fontWeight: 'bold', fontSize: '18px' }}>
+               Status: {message}
+           </div>
            <div className='boards-container'>
               <div className='player'>
                     <h2>Spoiler</h2>
-                    <Graph data={state.g1} color='#4a90e2' />
+                    <Graph data={state.g1} color='#4a90e2' nodeClick={(id) => move('g1', id)} />
               </div>
               <div className='player'>
                     <h2>Duplicator</h2>
-                    <Graph data={state.g2} color='#e24a4a' />
+                    <Graph data={state.g2} color='#e24a4a' nodeClick={(id) => move('g2', id)} />
               </div>
            </div>
         </div>
