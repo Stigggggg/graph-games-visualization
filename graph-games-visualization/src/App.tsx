@@ -86,7 +86,9 @@ function GameEF() {
     const location = useLocation();
     const state = location.state as any;
     const [status, setStatus] = useState('playing');
-    const [message, setMessage] = useState('');
+    const [message, setMessage] = useState('Waiting for first move');
+    const [round, setRound] = useState(1);
+    const [turn, setTurn] = useState('spoiler');
 
     if (!state) {
         return (
@@ -118,6 +120,15 @@ function GameEF() {
                 alert(data.error);
                 return;
             }
+
+            if (turn === 'spoiler') {
+                setTurn('duplicator');
+            } else {
+                setTurn('spoiler');
+                if (data.status !== 'game_over') {
+                    setRound(prev => prev + 1);
+                }
+            }
             setMessage(data.message || `Winner: ${data.winner}, Reason: ${data.reason}`);
 
             if (data.status == 'game_over') {
@@ -131,20 +142,23 @@ function GameEF() {
     return (
         <div className='app-container'>
            <h1>EF Game</h1>
-           {/* Pasek wyświetlający aktualny stan gry */}
-           <div style={{ background: '#fff', padding: '10px 20px', borderRadius: '5px', fontWeight: 'bold', fontSize: '18px' }}>
-               Status: {message}
+           <div className='status-bar'>
+               <div>Status: {message}</div>
+               <div>Round: {round}/{state.maxRounds}</div>
            </div>
            <div className='boards-container'>
               <div className='player'>
-                    <h2>Spoiler</h2>
-                    <Graph data={state.g1} color='#4a90e2' nodeClick={(id) => move('g1', id)} />
+                  <h2>Spoiler</h2>
+                  <Graph data={state.g1} color='#4a90e2' nodeClick={(id) => move('g1', id)} />
               </div>
               <div className='player'>
-                    <h2>Duplicator</h2>
-                    <Graph data={state.g2} color='#e24a4a' nodeClick={(id) => move('g2', id)} />
+                  <h2>Duplicator</h2>
+                  <Graph data={state.g2} color='#e24a4a' nodeClick={(id) => move('g2', id)} />
               </div>
            </div>
+           {status === 'game_over' && (
+              <button onClick={() => navigate('/menu-ef')} className='back-button'>Back to menu</button>
+            )}
         </div>
     );
 }

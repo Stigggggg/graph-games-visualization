@@ -10,7 +10,7 @@ games = {}
 
 def generate_nx_graph(n, m):
     G = nx.DiGraph()
-    colors = ['a', 'b', 'c', 'd', 'e', 'f']
+    colors = ['a', 'b', 'c']
 
     nodes = []
     for i in range(1, n + 1):
