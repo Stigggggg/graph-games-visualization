@@ -20,6 +20,7 @@ function MenuEF() {
     const [E, setE] = useState<number | ''>('');
     const [rounds, setRounds] = useState<number>(3);
     const [errorMessage, setErrorMessage] = useState('');
+    const [mode, setMode] = useState('human');
 
     const handler = async () => {
         try {
@@ -31,7 +32,12 @@ function MenuEF() {
             const response = await fetch('http://127.0.0.1:5000/generate-ef', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ n: V, m: E, rounds: rounds })
+                body: JSON.stringify({ 
+                    n: V, 
+                    m: E, 
+                    rounds: rounds,
+                    mode: mode,
+                })
             });
 
             const data = await response.json();
@@ -40,7 +46,13 @@ function MenuEF() {
             }
 
             navigate('/ef', {
-              state: {game_id: data.game_id, g1: data.g1, g2: data.g2, maxRounds: rounds }
+              state: {
+                game_id: data.game_id, 
+                g1: data.g1, 
+                g2: data.g2, 
+                maxRounds: rounds ,
+                mode: mode
+              }
             });
         } catch (e: any) {
           setErrorMessage(e.message);
@@ -71,6 +83,14 @@ function MenuEF() {
                   Number of rounds: 
                   <input type='number' min='3' max='10' value={rounds} onChange={(e) => setRounds(Number(e.target.value))}/>
                 </label>
+              </div>
+
+              <div className='mode'>
+                <label>Game mode: </label>
+                <select value={mode} onChange={(e) => setMode(e.target.value)}>
+                    <option value='human'>Human vs Human</option>
+                    <option value='ai'>Human vs AI</option>
+                </select>
               </div>
 
               <div className='error-message'>{errorMessage}</div>
@@ -121,10 +141,16 @@ function GameEF() {
                 return;
             }
 
-            if (turn === 'spoiler') {
-                setTurn('duplicator');
+            if (state.mode === 'human') {
+                if (turn === 'spoiler') {
+                    setTurn('duplicator');
+                } else {
+                    setTurn('spoiler');
+                    if (data.status !== 'game_over') {
+                        setRound(prev => prev + 1);
+                    }
+                }
             } else {
-                setTurn('spoiler');
                 if (data.status !== 'game_over') {
                     setRound(prev => prev + 1);
                 }
@@ -148,11 +174,11 @@ function GameEF() {
            </div>
            <div className='boards-container'>
               <div className='player'>
-                  <h2>Spoiler</h2>
+                  <h2>G1</h2>
                   <Graph data={state.g1} color='#4a90e2' nodeClick={(id) => move('g1', id)} />
               </div>
               <div className='player'>
-                  <h2>Duplicator</h2>
+                  <h2>G2</h2>
                   <Graph data={state.g2} color='#e24a4a' nodeClick={(id) => move('g2', id)} />
               </div>
            </div>

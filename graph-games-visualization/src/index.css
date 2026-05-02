@@ -68,6 +68,28 @@ input[type="number"] {
   font-size: 16px;
 }
 
+/* NOWE REGULY DLA FORMULARZA AI */
+.mode-selection {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+  margin: 15px 0;
+}
+
+.mode-selection label {
+  font-weight: bold;
+}
+
+select {
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 16px;
+  cursor: pointer;
+}
+/* ----------------------------- */
+
 .error-message {
   color: #e24a4a;
   font-weight: bold;

@@ -115,7 +115,7 @@ def move():
         return jsonify({'status': 'ok', 'message': 'Waiting for duplicator to play'})
     elif game['turn'] == 'duplicator':
         if graph_id == game['spoiler_choice_graph']:
-            return jsonify({'error': 'Duplicator has to play the other graph'})
+            return jsonify({'error': 'Duplicator has to play the other graph'}), 400
         if graph_id == 'g1':
             game['moves_g1'].append(node_id)
         else:
