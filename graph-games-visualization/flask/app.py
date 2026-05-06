@@ -67,12 +67,29 @@ def check_iso(g1, g2, moves_g1, moves_g2):
     
     return True, 'Duplicator survives'
 
+def get_move(game):
+    spoiler_graph = game['spoiler_choice_graph']
+    if spoiler_graph == 'g1':
+        ai_graph = 'g2'
+    else: 
+        ai_graph = 'g1'
+    
+    nodes = list(game[ai_graph].nodes())
+    choice = random.choice(nodes)
+    if ai_graph == 'g1':
+        game['moves_g1'].append(choice)
+    else:
+        game['moves_g2'].append(choice)
+    
+    return choice, ai_graph
+
 @app.route('/generate-ef', methods=['POST'])
 def generate():
     data = request.json
     n = int(data.get('n'))
     m = int(data.get('m'))
     rounds = int(data.get('rounds', 3))
+    mode = data.get('mode', 'human')
     max_edges = n * n
     if m > max_edges:
         return jsonify({'error': f'Error: for {n} maximum number of edges is {max_edges}'}), 400
@@ -90,10 +107,12 @@ def generate():
         'moves_g1': [],
         'moves_g2': [],
         'turn': 'spoiler',
-        'status': 'in progress'
+        'status': 'in progress',
+        'mode': mode
     }
 
     return jsonify({'game_id': game_id, 'g1': cyto_g1, 'g2': cyto_g2})
+
 
 @app.route('/move', methods=['POST'])
 def move():
@@ -102,37 +121,82 @@ def move():
     graph_id = data.get('graph_id')
     node_id = data.get('node_id')
     game = games.get(game_id)
+    
     if not game or game['status'] != 'in progress':
         return jsonify({'error': 'Game has ended or does not exist'}), 400
 
     if game['turn'] == 'spoiler':
+        # 1. Rejestrujemy ruch człowieka
         game['spoiler_choice_graph'] = graph_id
         if graph_id == 'g1':
             game['moves_g1'].append(node_id)
         else:
             game['moves_g2'].append(node_id)
-        game['turn'] = 'duplicator'
-        return jsonify({'status': 'ok', 'message': 'Waiting for duplicator to play'})
+            
+        # --- 4. ZMIANA PRZEPŁYWU TUR DLA PvE ---
+        if game['mode'] == 'ai':
+            # AI gra natychmiast
+            ai_node, ai_graph = get_move(game)
+            
+            # Od razu sprawdzamy kto wygrał rundę
+            survives, message = check_iso(game['g1'], game['g2'], game['moves_g1'], game['moves_g2'])
+            
+            if not survives:
+                game['status'] = 'spoiler_wins'
+                return jsonify({
+                    'status': 'game_over', 
+                    'winner': 'spoiler', 
+                    'reason': f"AI chose {ai_node} in {ai_graph}. {message}"
+                })
+                
+            game['current_round'] += 1
+            # Kolejna runda, więc ruch znów wraca do człowieka
+            game['turn'] = 'spoiler' 
+            
+            if game['current_round'] > game['rounds']:
+                game['status'] = 'duplicator_won'
+                return jsonify({
+                    'status': 'game_over', 
+                    'winner': 'duplicator (AI)', 
+                    'reason': f"AI chose {ai_node} in {ai_graph} and survived all rounds!"
+                })
+                
+            return jsonify({
+                'status': 'ok', 
+                'message': f"AI matched with {ai_node} in {ai_graph}. Next round!"
+            })
+            
+        # Jeśli tryb to PvP, działamy normalnie
+        else:
+            game['turn'] = 'duplicator'
+            return jsonify({'status': 'ok', 'message': 'Waiting for duplicator to play'})
+            
     elif game['turn'] == 'duplicator':
+        # Zabezpieczenie: jeśli to tryb PvE, człowiek nie może tu wejść
+        if game['mode'] == 'ai':
+            return jsonify({'error': 'It is AI turn!'}), 400
+            
         if graph_id == game['spoiler_choice_graph']:
             return jsonify({'error': 'Duplicator has to play the other graph'}), 400
+            
         if graph_id == 'g1':
             game['moves_g1'].append(node_id)
         else:
             game['moves_g2'].append(node_id)
     
-    survives, message = check_iso(game['g1'], game['g2'], game['moves_g1'], game['moves_g2'])
-    if not survives:
-        game['status'] = 'spoiler_wins'
-        return jsonify({'status': 'game_over', 'winner': 'spoiler', 'reason': message})
-    game['current_round'] += 1
-    game['turn'] = 'spoiler'
-    
-    if game['current_round'] > game['rounds']:
-        game['status'] = 'duplicator_won'
-        return jsonify({'status': 'game_over', 'winner': 'duplicator', 'reason': 'Duplicator survived for all rounds'})
-    
-    return jsonify({'status': 'ok', 'message': 'Next round, waiting for spoiler to play'})
+        survives, message = check_iso(game['g1'], game['g2'], game['moves_g1'], game['moves_g2'])
+        if not survives:
+            game['status'] = 'spoiler_wins'
+            return jsonify({'status': 'game_over', 'winner': 'spoiler', 'reason': message})
+            
+        game['current_round'] += 1
+        game['turn'] = 'spoiler'
+        
+        if game['current_round'] > game['rounds']:
+            game['status'] = 'duplicator_won'
+            return jsonify({'status': 'game_over', 'winner': 'duplicator', 'reason': 'Duplicator survived for all rounds'})
+        
+        return jsonify({'status': 'ok', 'message': 'Next round, waiting for spoiler to play'})
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)

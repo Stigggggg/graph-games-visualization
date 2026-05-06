@@ -121,7 +121,7 @@ function GameEF() {
 
     const move = async (graphId: string, nodeId: string) => {
         if (status == 'game_over') {
-            return;
+            return false;
         }
 
         try {
@@ -138,7 +138,7 @@ function GameEF() {
 
             if (!response.ok) {
                 alert(data.error);
-                return;
+                return false;
             }
 
             if (state.mode === 'human') {
@@ -160,8 +160,10 @@ function GameEF() {
             if (data.status == 'game_over') {
                 setStatus('game_over');
             }
+            return true;
         } catch (e) {
             console.error(e);
+            return false;
         }
     }
 

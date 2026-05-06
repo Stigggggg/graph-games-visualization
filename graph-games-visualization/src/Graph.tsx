@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react';
 export interface GraphProps {
   data: any[];
   color: string;
-  nodeClick?: (nodeId: string) => void;
+  nodeClick?: (nodeId: string) => Promise<boolean> | void | boolean;
 }
 
 export function Graph({ data, color, nodeClick }: GraphProps) {
@@ -27,7 +27,9 @@ export function Graph({ data, color, nodeClick }: GraphProps) {
             'text-halign': 'center',
             'width': '45px',
             'height': '45px',
-            'font-size': '14px'
+            'font-size': '14px',
+            'transition-property': 'background-color', 
+            'transition-duration': 0.2
           }
         },
         {
@@ -41,11 +43,11 @@ export function Graph({ data, color, nodeClick }: GraphProps) {
           }
         },
         {
-          selector: '.hovered',
+          selector: '.selected',
           style: {
-            'background-color': 'green',
-            'line-color': 'green',
-            'target-arrow-color': 'green'
+              'background-color': '#2ecc71',
+              'transition-property': 'background-color',
+              'transition-duration': 0.2
           }
         }
       ],
@@ -56,10 +58,15 @@ export function Graph({ data, color, nodeClick }: GraphProps) {
       }
     });
 
-    cy.on('tap', 'node', (e) => {
-        const nodeId = e.target.id();
+    cy.on('tap', 'node', async (e) => {
+        const node = e.target;
+        const nodeId = node.id();
         if (nodeClick) {
-            nodeClick(nodeId)
+            node.addClass('selected');
+            const ok = await nodeClick(nodeId);
+            if (ok === false) {
+                node.removeClass('selected')
+            }
         }
     });
 
