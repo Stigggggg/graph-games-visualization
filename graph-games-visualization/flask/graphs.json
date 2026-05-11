@@ -1,0 +1,24 @@
+{
+    "g1": {
+      "nodes": [
+        { "id": "v1", "color": "a" },
+        { "id": "v2", "color": "b" },
+        { "id": "v3", "color": "a" }
+      ],
+      "edges": [
+        { "source": "v1", "target": "v2", "color": "c" },
+        { "source": "v2", "target": "v3", "color": "a" }
+      ]
+    },
+    "g2": {
+      "nodes": [
+        { "id": "u1", "color": "a" },
+        { "id": "u2", "color": "b" },
+        { "id": "u3", "color": "a" }
+      ],
+      "edges": [
+        { "source": "u1", "target": "u2", "color": "c" },
+        { "source": "u3", "target": "u2", "color": "a" }
+      ]
+    }
+  }

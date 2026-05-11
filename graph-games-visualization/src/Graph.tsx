@@ -4,11 +4,13 @@ import { useEffect, useRef } from 'react';
 export interface GraphProps {
   data: any[];
   color: string;
+  selectedNodes?: string[];
   nodeClick?: (nodeId: string) => Promise<boolean> | void | boolean;
 }
 
-export function Graph({ data, color, nodeClick }: GraphProps) {
+export function Graph({ data, color, selectedNodes = [], nodeClick }: GraphProps) {
   const cyContainerRef = useRef<HTMLDivElement>(null);
+  const cyInstanceRef = useRef<cytoscape.Core | null>(null);
 
   useEffect(() => {
     if (!cyContainerRef.current) return;
@@ -58,6 +60,7 @@ export function Graph({ data, color, nodeClick }: GraphProps) {
       }
     });
 
+    cyInstanceRef.current = cy;
     cy.on('tap', 'node', async (e) => {
         const node = e.target;
         const nodeId = node.id();
@@ -74,6 +77,14 @@ export function Graph({ data, color, nodeClick }: GraphProps) {
       cy.destroy();
     };
   }, [data, color]);
+
+  useEffect(() => {
+      if (cyInstanceRef.current) {
+          selectedNodes.forEach(nodeId => {
+              cyInstanceRef.current!.getElementById(nodeId).addClass('selected');
+          })
+      }
+  }, [selectedNodes]);
 
   return <div ref={cyContainerRef} className='graph-container' />;
 }
