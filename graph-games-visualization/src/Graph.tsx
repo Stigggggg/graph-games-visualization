@@ -86,5 +86,5 @@ export function Graph({ data, color, selectedNodes = [], nodeClick }: GraphProps
       }
   }, [selectedNodes]);
 
-  return <div ref={cyContainerRef} className='graph-container' />;
+  return <div ref={cyContainerRef} className='w-[90vw] md:w-[42vw] max-w-[550px] h-[50vh] md:h-[55vh] min-h-[350px] border-2 border-gray-300 bg-white rounded-xl shadow-lg relative text-left' />;
 }
