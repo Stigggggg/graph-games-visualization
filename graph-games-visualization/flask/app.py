@@ -75,6 +75,62 @@ def check_iso(g1, g2, moves_g1, moves_g2):
     
     return True, 'Duplicator survives'
 
+def check_iso_pebbles(g1, g2, p1, p2):
+    active_pebbles = [pid for pid in p1 if pid in p2]
+    
+    for pid in active_pebbles:
+        u = p1[pid]
+        v = p2[pid]
+        if g1.nodes[u]['color'] != g2.nodes[v]['color']:
+            return False, f'Different colors under pebble {pid}'
+        for pid2 in active_pebbles:
+            u2 = p1[pid2]
+            v2 = p1[pid2]
+            if g1.has_edge(u, u2) != g2.has_edge(v, v2):
+                return False, f'Difference in edges between pebbles {pid} and {pid2}'
+            if (u == u2) != (v == v2):
+                return False, 'Equality error (two pebbles on one node, but not on the other)'
+
+    return True, 'Duplicator survives'
+
+def get_pebble_move(game):
+    g1, g2 = game['g1'], game['g2']
+    p1, p2 = game['pebbles_g1'], game['pebbles_g2']
+    active_pebble = game['current_pebble']
+    spoiler_graph = game['spoiler_choice_graph']
+    if spoiler_graph == 'g1':
+        ai_graph_str = 'g2'
+    else:
+        ai_graph_str = 'g1'
+    if ai_graph_str == 'g1':
+        ai_graph = g2
+    else:
+        ai_graph = g1
+    valid_moves = []
+
+    for v in ai_graph.nodes():
+        test_p1, test_p2 = dict(p1), dict(p2)
+        if ai_graph_str == 'g1': 
+            test_p1[active_pebble] = v
+        else: 
+            test_p2[active_pebble] = v
+        survives, _ = check_iso_pebbles(g1, g2, test_p1, test_p2)
+        if survives:
+            valid_moves.append(v)
+    
+    if valid_moves:
+        best_move = random.choice(valid_moves)
+    else:
+        best_move = random.choice(list(ai_graph.nodes()))
+    if ai_graph_str == 'g1':
+        game['pebbles_g1'][active_pebble] = best_move
+    else: 
+        game['pebbles_g2'][active_pebble] = best_move
+    
+    return best_move, ai_graph_str
+
+## todo: route generate pebbles, route move pebble
+
 def get_move(game):
     spoiler_graph = game['spoiler_choice_graph']
     if spoiler_graph == 'g1':

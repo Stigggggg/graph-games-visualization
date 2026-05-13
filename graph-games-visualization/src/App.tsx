@@ -230,6 +230,116 @@ function GameEF() {
     );
 }
 
+function MenuPebbles() {
+    const navigate = useNavigate();
+    const [V, setV] = useState<number | ''>('');
+    const [E, setE] = useState<number | ''>('');
+    const [k, setK] = useState<number>(3);
+    const [errorMessage, setErrorMessage] = useState('');
+    const [mode, setMode] = useState('human');
+    const [source, setSource] = useState('random');
+    const [file, setFile] = useState<File | null>(null);
+
+    const handler = async () => {
+        try {
+            setErrorMessage('');
+            let settings: any = {
+                k: k,
+                mode: mode,
+                source: source
+            };
+            if (source === 'random') {
+                if (V === '' || E === '') {
+                    throw new Error('Please insert the number of vertices and edges!');
+                }
+                settings.n = V;
+                settings.m = E;
+            } else if (source === 'file') {
+                if (!file) {
+                    throw new Error('Please upload a file!');
+                }
+                settings.custom = JSON.parse(await file.text());
+            }
+
+            const response = await fetch('http://127.0.0.1:5000/generate-pebbles', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(settings)
+            });
+            const data = await response.json();
+            if (!response.ok) {
+                throw new Error(data.error);
+            }
+            navigate('/pebbles', {
+                state: {
+                  game_id: data.game_id, 
+                  g1: data.g1,
+                  g2: data.g2, 
+                  k: k,
+                  mode: mode
+                }
+              });
+        } catch(e: any) {
+            setErrorMessage(e.message);
+        }
+    };
+
+    const inputClass = "p-2 border border-gray-300 rounded-md mt-1 w-full";
+    return (
+        <div className="flex flex-col items-center gap-4 mt-6 p-4">
+            <h1 className="text-3xl font-bold">Settings</h1>
+            <div className="flex flex-col items-center gap-4 bg-white p-8 rounded-xl shadow-lg w-full max-w-sm">
+                <label className='w-full font-semibold'>Graph source:
+                    <select value={source} onChange={(e) => setSource(e.target.value)} className={inputClass}>
+                        <option value='random'>Randomly generated</option>
+                        <option value='file'>Uploaded from file</option>
+                        <option value='draw' disabled>Draw</option>
+                    </select>
+                </label>
+                {source === 'random' && (
+                    <div className="flex gap-4 w-full">
+                        <label className='w-full font-semibold'>Vertices (n):
+                            <input type='number' min='1' max='10' value={V} onChange={(e) => setV(e.target.value === '' ? '' : Number(e.target.value))} className={inputClass} />
+                        </label>
+                        <label className='w-full font-semibold'>Edges (m):
+                            <input type='number' min='0' max={V === '' ? 0 : V * V} value={E} onChange={(e) => setE(e.target.value === '' ? '' : Number(e.target.value))} className={inputClass} />
+                        </label>
+                    </div>
+                )}
+                {source === 'file' && (
+                    <div className="w-full">
+                        <label className='w-full font-semibold'>Upload JSON:
+                            <input type='file' accept='.json' onChange={(e) => setFile(e.target.files ? e.target.files[0] : null)} className="mt-2 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
+                        </label>
+                    </div>
+                )}
+                <div className="w-full">
+                    <label className='w-full font-semibold'>Number of pebbles(k):
+                        <input type='number' min='2' max='4' value={k} onChange={(e) => setK(Number(e.target.value))} className={inputClass} />
+                    </label>
+                </div>
+                <div className="w-full">
+                    <label className='w-full font-semibold'>Game mode:
+                        <select value={mode} onChange={(e) => setMode(e.target.value)} className={inputClass}>
+                            <option value='human'>Human vs Human</option>
+                            <option value='ai'>Human vs AI</option>
+                        </select>
+                    </label>
+                </div>
+
+                {errorMessage && <div className="text-red-500 font-bold text-center">{errorMessage}</div>}
+                <div className="flex flex-col gap-3 w-full mt-2">
+                    <button onClick={handler} className="py-3 bg-blue-500 text-white font-bold rounded-lg shadow hover:bg-blue-600 transition">
+                        Start game
+                    </button>
+                    <button onClick={() => navigate('/')} className="py-2 bg-gray-200 text-gray-800 font-semibold rounded-lg hover:bg-gray-300 transition">
+                        Back to menu
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+
 function App() {
     return (
         <BrowserRouter>
@@ -237,6 +347,8 @@ function App() {
             <Route path='/' element={<Home />} />
             <Route path='/menu-ef' element={<MenuEF />} />
             <Route path='/ef' element={<GameEF />} />
+            <Route path='/menu-pebbles' element={<MenuPebbles />} />
+            <Route path='/pebbles' element={<GamePebbles />} />
           </Routes>
         </BrowserRouter>
     );

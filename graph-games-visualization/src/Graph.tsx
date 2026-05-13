@@ -5,10 +5,11 @@ export interface GraphProps {
   data: any[];
   color: string;
   selectedNodes?: string[];
+  pebbles?: Record<string, string>;
   nodeClick?: (nodeId: string) => Promise<boolean> | void | boolean;
 }
 
-export function Graph({ data, color, selectedNodes = [], nodeClick }: GraphProps) {
+export function Graph({ data, color, selectedNodes = [], pebbles, nodeClick }: GraphProps) {
   const cyContainerRef = useRef<HTMLDivElement>(null);
   const cyInstanceRef = useRef<cytoscape.Core | null>(null);
 
@@ -68,7 +69,7 @@ export function Graph({ data, color, selectedNodes = [], nodeClick }: GraphProps
             node.addClass('selected');
             const ok = await nodeClick(nodeId);
             if (ok === false) {
-                node.removeClass('selected')
+                node.removeClass('selected');
             }
         }
     });
@@ -80,11 +81,27 @@ export function Graph({ data, color, selectedNodes = [], nodeClick }: GraphProps
 
   useEffect(() => {
       if (cyInstanceRef.current) {
+          cyInstanceRef.current.nodes().removeClass('selected');
+          cyInstanceRef.current.nodes().forEach(node => {
+              node.style('label', `${node.id()}, ${node.data('color')}`);
+          });
+          
           selectedNodes.forEach(nodeId => {
               cyInstanceRef.current!.getElementById(nodeId).addClass('selected');
-          })
+          });
+
+          if (pebbles) {
+              Object.entries(pebbles).forEach(([pebbleId, nodeId]) => {
+                  const node = cyInstanceRef.current!.getElementById(nodeId as string);
+                  if (node.length > 0) {
+                      node.addClass('selected');
+                      const oldLabel = `${node.id()}, ${node.data('color')}`;
+                      node.style('label', `${oldLabel} P${pebbleId}`);
+                  }
+              });
+          }
       }
-  }, [selectedNodes]);
+  }, [selectedNodes, pebbles]);
 
   return <div ref={cyContainerRef} className='w-[90vw] md:w-[42vw] max-w-[550px] h-[50vh] md:h-[55vh] min-h-[350px] border-2 border-gray-300 bg-white rounded-xl shadow-lg relative text-left' />;
 }
