@@ -1,8 +1,6 @@
-version: '3.8'
-
 services:
   flask:
-    build: ./backend
+    build: ./flask
     ports:
       - "5000:5000"
     volumes:
@@ -11,11 +9,11 @@ services:
       - FLASK_DEBUG=1
 
   src:
-    build: ./src
+    build: .
     ports:
       - "5173:5173"
     volumes:
-      - ./src:/app
+      - .:/app
       - /app/node_modules
     depends_on:
       - flask
