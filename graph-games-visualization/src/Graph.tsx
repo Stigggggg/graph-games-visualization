@@ -12,6 +12,10 @@ export interface GraphProps {
 export function Graph({ data, color, selectedNodes = [], pebbles, nodeClick }: GraphProps) {
   const cyContainerRef = useRef<HTMLDivElement>(null);
   const cyInstanceRef = useRef<cytoscape.Core | null>(null);
+  const nodeClickRef = useRef(nodeClick);
+  useEffect(() => {
+      nodeClickRef.current = nodeClick;
+  }, [nodeClick]);
 
   useEffect(() => {
     if (!cyContainerRef.current) return;
@@ -65,9 +69,9 @@ export function Graph({ data, color, selectedNodes = [], pebbles, nodeClick }: G
     cy.on('tap', 'node', async (e) => {
         const node = e.target;
         const nodeId = node.id();
-        if (nodeClick) {
+        if (nodeClickRef.current) {
             node.addClass('selected');
-            const ok = await nodeClick(nodeId);
+            const ok = await nodeClickRef.current(nodeId);
             if (ok === false) {
                 node.removeClass('selected');
             }

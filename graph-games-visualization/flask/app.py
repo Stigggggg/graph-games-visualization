@@ -85,7 +85,7 @@ def check_iso_pebbles(g1, g2, p1, p2):
             return False, f'Different colors under pebble {pid}'
         for pid2 in active_pebbles:
             u2 = p1[pid2]
-            v2 = p1[pid2]
+            v2 = p2[pid2]
             if g1.has_edge(u, u2) != g2.has_edge(v, v2):
                 return False, f'Difference in edges between pebbles {pid} and {pid2}'
             if (u == u2) != (v == v2):
@@ -128,8 +128,6 @@ def get_pebble_move(game):
         game['pebbles_g2'][active_pebble] = best_move
     
     return best_move, ai_graph_str
-
-## todo: route generate pebbles, route move pebble
 
 def get_move(game):
     spoiler_graph = game['spoiler_choice_graph']
@@ -292,7 +290,7 @@ def move():
                     'status': 'game_over', 
                     'winner': 'spoiler', 
                     'reason': f"AI chose {ai_node} in {ai_graph}. {message}",
-                    'moves_g1': game['moves_g1'], 'moves_g2': game['moves_g2'] # <-- DODANE
+                    'moves_g1': game['moves_g1'], 'moves_g2': game['moves_g2']
                 })
                 
             game['current_round'] += 1
@@ -304,20 +302,20 @@ def move():
                     'status': 'game_over', 
                     'winner': 'duplicator (AI)', 
                     'reason': f"AI chose {ai_node} in {ai_graph} and survived all rounds!",
-                    'moves_g1': game['moves_g1'], 'moves_g2': game['moves_g2'] # <-- DODANE
+                    'moves_g1': game['moves_g1'], 'moves_g2': game['moves_g2']
                 })
                 
             return jsonify({
                 'status': 'ok', 
                 'message': f"AI matched with {ai_node} in {ai_graph}. Next round!",
-                'moves_g1': game['moves_g1'], 'moves_g2': game['moves_g2'] # <-- DODANE
+                'moves_g1': game['moves_g1'], 'moves_g2': game['moves_g2']
             })
             
         else:
             game['turn'] = 'duplicator'
             return jsonify({
                 'status': 'ok', 'message': 'Waiting for duplicator to play',
-                'moves_g1': game['moves_g1'], 'moves_g2': game['moves_g2'] # <-- DODANE
+                'moves_g1': game['moves_g1'], 'moves_g2': game['moves_g2']
             })
             
     elif game['turn'] == 'duplicator':
@@ -332,7 +330,7 @@ def move():
             game['status'] = 'spoiler_wins'
             return jsonify({
                 'status': 'game_over', 'winner': 'spoiler', 'reason': message,
-                'moves_g1': game['moves_g1'], 'moves_g2': game['moves_g2'] # <-- DODANE
+                'moves_g1': game['moves_g1'], 'moves_g2': game['moves_g2']
             })
             
         game['current_round'] += 1
@@ -342,13 +340,92 @@ def move():
             game['status'] = 'duplicator_won'
             return jsonify({
                 'status': 'game_over', 'winner': 'duplicator', 'reason': 'Duplicator survived for all rounds',
-                'moves_g1': game['moves_g1'], 'moves_g2': game['moves_g2'] # <-- DODANE
+                'moves_g1': game['moves_g1'], 'moves_g2': game['moves_g2']
             })
         
         return jsonify({
             'status': 'ok', 'message': 'Next round, waiting for spoiler to play',
-            'moves_g1': game['moves_g1'], 'moves_g2': game['moves_g2'] # <-- DODANE
+            'moves_g1': game['moves_g1'], 'moves_g2': game['moves_g2']
         })
+
+@app.route('/generate-pebbles', methods=['POST'])
+def generate_pebbles():
+    data = request.json
+    k = int(data.get('k', 3))
+    mode = data.get('mode', 'human')
+    source = data.get('source', 'random')
+
+    if source == 'random':
+        n = int(data.get('n'))
+        m = int(data.get('m'))
+        if m > n * n:
+            return jsonify({'error': 'Too many edges'}), 400
+        g1, g2 = generate_nx_graph(n, m), generate_nx_graph(n, m)
+    elif source == 'file':
+        custom_data = data.get('custom')
+        g1, g2 = generate_nx_json(custom_data['g1']), generate_nx_json(custom_data['g2'])
+
+    game_id = str(uuid.uuid4())
+    games[game_id] = {
+        'type': 'pebbles',
+        'g1': g1,
+        'g2': g2,
+        'k': k,
+        'pebbles_g1': {},
+        'pebbles_g2': {},
+        'turn': 'spoiler',
+        'status': 'in progress',
+        'mode': mode,
+        'current_pebble': None
+    }
+
+    return jsonify({'game_id': game_id, 'g1': parse_to_cytoscape(g1), 'g2': parse_to_cytoscape(g2)})
+
+@app.route('/move-pebble', methods=['POST'])
+def move_pebble():
+    data = request.json
+    game_id, graph_id, node_id, pebble_id = data.get('game_id'), data.get('graph_id'), data.get('node_id'), str(data.get('pebble_id'))
+    game = games.get(game_id)
+    
+    if not game or game['status'] != 'in progress': return jsonify({'error': 'Game ended'}), 400
+
+    if game['turn'] == 'spoiler':
+        game['spoiler_choice_graph'] = graph_id
+        game['current_pebble'] = pebble_id
+        
+        if graph_id == 'g1': game['pebbles_g1'][pebble_id] = node_id
+        else: game['pebbles_g2'][pebble_id] = node_id
+            
+        if game['mode'] == 'ai':
+            ai_node, ai_graph = get_pebble_move(game)
+            survives, message = check_iso_pebbles(game['g1'], game['g2'], game['pebbles_g1'], game['pebbles_g2'])
+            
+            if not survives:
+                game['status'] = 'spoiler_wins'
+                return jsonify({'status': 'game_over', 'winner': 'spoiler', 'reason': message, 'p1': game['pebbles_g1'], 'p2': game['pebbles_g2']})
+                
+            game['turn'] = 'spoiler' 
+            return jsonify({'status': 'ok', 'message': f"AI placed pebble {pebble_id} on {ai_node}.", 'p1': game['pebbles_g1'], 'p2': game['pebbles_g2']})
+            
+        else:
+            game['turn'] = 'duplicator'
+            return jsonify({'status': 'ok', 'message': 'Waiting for duplicator', 'p1': game['pebbles_g1'], 'p2': game['pebbles_g2']})
+            
+    elif game['turn'] == 'duplicator':
+        if game['mode'] == 'ai': return jsonify({'error': 'AI turn!'}), 400
+        if graph_id == game['spoiler_choice_graph']: return jsonify({'error': 'Play on the other graph'}), 400
+        if pebble_id != game['current_pebble']: return jsonify({'error': f'You must use pebble {game["current_pebble"]}'}), 400
+            
+        if graph_id == 'g1': game['pebbles_g1'][pebble_id] = node_id
+        else: game['pebbles_g2'][pebble_id] = node_id
+    
+        survives, message = check_iso_pebbles(game['g1'], game['g2'], game['pebbles_g1'], game['pebbles_g2'])
+        if not survives:
+            game['status'] = 'spoiler_wins'
+            return jsonify({'status': 'game_over', 'winner': 'spoiler', 'reason': message, 'p1': game['pebbles_g1'], 'p2': game['pebbles_g2']})
+            
+        game['turn'] = 'spoiler'
+        return jsonify({'status': 'ok', 'message': 'Waiting for spoiler', 'p1': game['pebbles_g1'], 'p2': game['pebbles_g2']})
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)

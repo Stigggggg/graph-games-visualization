@@ -15,8 +15,8 @@ function Home() {
             EF Game
         </button>
         <button 
-            disabled
-            className="px-6 py-3 bg-gray-400 text-white font-semibold rounded-lg cursor-not-allowed"
+            onClick={() => navigate('/menu-pebbles')}
+            className="px-6 py-3 bg-blue-500 text-white font-semibold rounded-lg shadow-md hover:bg-blue-600 transition"
         >
             Pebbles
         </button>
@@ -339,6 +339,101 @@ function MenuPebbles() {
     );
 }
 
+function GamePebbles() {
+    const navigate = useNavigate();
+    const location = useLocation();
+    const state = location.state as any;
+    const [status, setStatus] = useState('playing');
+    const [message, setMessage] = useState('Waiting for first move');
+    const [turn, setTurn] = useState('spoiler');
+    const [active, setActive] = useState<number>(1);
+    const [p1, setP1] = useState<Record<string, string>>({});
+    const [p2, setP2] = useState<Record<string, string>>({});
+
+    if (!state) {
+        return (
+            <div className="flex flex-col items-center gap-4 p-10">
+                <h2 className="text-2xl font-bold text-red-500">No game generated!</h2>
+                <button onClick={() => navigate('/menu-ef')} className="px-4 py-2 bg-blue-500 text-white rounded">Back to settings</button>
+            </div>
+        );
+    }
+
+    const move = async (graphId: string, nodeId: string) => {
+        if (status === 'game_over') {
+            return false;
+        } 
+
+        try {
+            const response = await fetch('http://127.0.0.1:5000/move-pebble', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ game_id: state.game_id, graph_id: graphId, node_id: nodeId, pebble_id: active })
+            });
+            const data = await response.json();
+
+            if (!response.ok) {
+                alert(data.error);
+                return false;
+            }
+
+            setP1(data.p1 || {});
+            setP2(data.p2 || {});
+
+            if (state.mode === 'human') {
+                if (turn === 'spoiler') {
+                    setTurn('duplicator');
+                }
+                else {
+                    setTurn('spoiler');
+                }
+            }
+            setMessage(data.message || `Winner: ${data.winner}, Reason: ${data.reason}`);
+            if (data.status == 'game_over') {
+                setStatus('game_over');
+            } 
+            return true;
+        } catch (e) {
+            console.error(e);
+            return false;
+        }
+    }
+
+    return (
+        <div className="flex flex-col items-center gap-4 mt-6 p-4">
+           <h1 className="text-3xl font-bold">Pebble Game</h1>
+           <div className="bg-white py-4 px-8 rounded-xl font-bold w-full max-w-4xl shadow-md border-t-4 border-purple-500 text-center">
+               <div className="text-gray-800">Status: <span className="text-purple-600 font-normal">{message}</span></div>
+           </div>
+
+           <div className="flex gap-2 items-center bg-gray-200 p-3 rounded-lg">
+               <span className="font-bold">Select Pebble:</span>
+               {Array.from({length: state.k}, (_, i) => i + 1).map(num => (
+                   <button 
+                       key={num} 
+                       onClick={() => setActive(num)}
+                       className={`w-10 h-10 font-bold rounded-full border-2 ${active === num ? 'bg-purple-500 text-white border-purple-700' : 'bg-white border-gray-400'}`}
+                   >
+                       {num}
+                   </button>
+               ))}
+           </div>
+           
+           <div className="flex flex-col md:flex-row gap-6 w-full max-w-6xl justify-center mt-2">
+              <div className="text-center w-full flex flex-col items-center">
+                  <h2 className="text-2xl font-bold mb-2">G1</h2>
+                  <Graph data={state.g1} color='#4a90e2' pebbles={p1} nodeClick={(id) => move('g1', id)} />
+              </div>
+              <div className="text-center w-full flex flex-col items-center">
+                  <h2 className="text-2xl font-bold mb-2 text-red-500">G2</h2>
+                  <Graph data={state.g2} color='#e24a4a' pebbles={p2} nodeClick={(id) => move('g2', id)} />
+              </div>
+           </div>
+           
+           <button onClick={() => navigate('/')} className="mt-4 px-6 py-3 bg-gray-500 text-white font-bold rounded-lg">Exit Game</button>
+        </div>
+    );
+}
 
 function App() {
     return (
