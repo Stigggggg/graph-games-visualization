@@ -216,13 +216,13 @@ function GameEF() {
                   <Graph data={state.g1} color='#4a90e2' selectedNodes={movesG1} nodeClick={(id) => move('g1', id)} />
               </div>
               <div className="text-center w-full flex flex-col items-center">
-                  <h2 className="text-2xl font-bold mb-2 text-red-500">G2</h2>
+                  <h2 className="text-2xl font-bold mb-2">G2</h2>
                   <Graph data={state.g2} color='#e24a4a' selectedNodes={movesG2} nodeClick={(id) => move('g2', id)} />
               </div>
            </div>
            
            {status === 'game_over' ? (
-              <button onClick={() => navigate('/menu-ef')} className="mt-6 px-6 py-3 bg-green-500 hover:bg-green-600 text-white font-bold rounded-lg shadow-lg transition">
+              <button onClick={() => navigate('/menu-ef')} className="mt-6 px-6 py-3 bg-gray-500 hover:bg-gray-600 text-white font-bold rounded-lg shadow-lg transition">
                   Back to menu / Play again
               </button>
             ) : (
@@ -408,7 +408,7 @@ function GamePebbles() {
            <h1 className="text-3xl font-bold">Pebble Game</h1>
            <div className="flex flex-col items-center gap-2 bg-white py-4 px-8 rounded-xl font-bold text-lg w-full max-w-4xl shadow-md border-t-4 border-blue-500">
                <div className="text-gray-800">Status: <span className="text-blue-600 font-normal">{message}</span></div>
-               <div className="text-gray-800">Round: <span className="text-blue-600">{state.k}</span></div>
+               <div className="text-gray-800">Number of pebbles: <span className="text-blue-600">{state.k}</span></div>
            </div>
 
            <div className="flex gap-2 items-center bg-gray-200 p-3 rounded-lg">
@@ -430,13 +430,13 @@ function GamePebbles() {
                   <Graph data={state.g1} color='#4a90e2' pebbles={p1} nodeClick={(id) => move('g1', id)} />
               </div>
               <div className="text-center w-full flex flex-col items-center">
-                  <h2 className="text-2xl font-bold mb-2 text-red-500">G2</h2>
+                  <h2 className="text-2xl font-bold mb-2">G2</h2>
                   <Graph data={state.g2} color='#e24a4a' pebbles={p2} nodeClick={(id) => move('g2', id)} />
               </div>
            </div>
            
            {status === 'game_over' ? (
-              <button onClick={() => navigate('/menu-ef')} className="mt-6 px-6 py-3 bg-green-500 hover:bg-green-600 text-white font-bold rounded-lg shadow-lg transition">
+              <button onClick={() => navigate('/menu-ef')} className="mt-6 px-6 py-3 bg-gray-500 hover:bg-gray-600 text-white font-bold rounded-lg shadow-lg transition">
                   Back to menu / Play again
               </button>
             ) : (
