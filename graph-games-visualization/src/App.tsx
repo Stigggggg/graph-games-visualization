@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { BrowserRouter, Routes, Route, useNavigate, useLocation} from 'react-router-dom';
 import { Graph } from './Graph';
+import { GraphEditor } from './GraphEditor';
 
 function Home() {
     const navigate = useNavigate();
@@ -33,6 +34,8 @@ function MenuEF() {
     const [mode, setMode] = useState('human');
     const [source, setSource] = useState('random');
     const [file, setFile] = useState<File | null>(null);
+    const [drawnG1, setDrawnG1] = useState<any[]>([]);
+    const [drawnG2, setDrawnG2] = useState<any[]>([]);
 
     const handler = async () => {
         try {
@@ -51,6 +54,19 @@ function MenuEF() {
                 } catch (e) {
                     throw new Error('Invalid format, upload a valid JSON.');
                 }
+            } else if (source === 'draw') {
+                if (drawnG1.length === 0 || drawnG2.length === 0) {
+                    throw new Error('Please draw both graphs!');
+                }
+                const formatGraph = (elements: any[]) => ({
+                    nodes: elements.filter(e => e.group === 'nodes').map(e => e.data),
+                    edges: elements.filter(e => e.group === 'edges').map(e => e.data)
+                });
+                settings.custom = {
+                    g1: formatGraph(drawnG1),
+                    g2: formatGraph(drawnG2)
+                }
+                settings.source = 'file';
             }
 
             const response = await fetch('http://127.0.0.1:5000/generate-ef', {
@@ -109,6 +125,19 @@ function MenuEF() {
                         <label className={labelClass}>Upload JSON:
                             <input type='file' accept='.json' onChange={(e) => setFile(e.target.files ? e.target.files[0] : null)} className="mt-2 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
                         </label>
+                    </div>
+                )}
+
+                {source === 'draw' && (
+                    <div className="flex flex-col gap-4 w-full">
+                        <div className="w-full">
+                            <h3 className="font-bold text-center text-blue-600 mb-2">Draw G1</h3>
+                            <GraphEditor prefix="v" onUpdate={setDrawnG1} />
+                        </div>
+                        <div className="w-full mt-4">
+                            <h3 className="font-bold text-center text-blue-600 mb-2">Draw G2</h3>
+                            <GraphEditor prefix="u" onUpdate={setDrawnG2} />
+                        </div>
                     </div>
                 )}
 
@@ -243,6 +272,8 @@ function MenuPebbles() {
     const [mode, setMode] = useState('human');
     const [source, setSource] = useState('random');
     const [file, setFile] = useState<File | null>(null);
+    const [drawnG1, setDrawnG1] = useState<any[]>([]);
+    const [drawnG2, setDrawnG2] = useState<any[]>([]);
 
     const handler = async () => {
         try {
@@ -263,6 +294,19 @@ function MenuPebbles() {
                     throw new Error('Please upload a file!');
                 }
                 settings.custom = JSON.parse(await file.text());
+            } else if (source === 'draw') {
+                if (drawnG1.length === 0 || drawnG2.length === 0) {
+                    throw new Error('Please draw both graphs!');
+                }
+                const formatGraph = (elements: any[]) => ({
+                    nodes: elements.filter(e => e.group === 'nodes').map(e => e.data),
+                    edges: elements.filter(e => e.group === 'edges').map(e => e.data)
+                });
+                settings.custom = {
+                    g1: formatGraph(drawnG1),
+                    g2: formatGraph(drawnG2)
+                }
+                settings.source = 'file';
             }
 
             const response = await fetch('http://127.0.0.1:5000/generate-pebbles', {
@@ -313,6 +357,18 @@ function MenuPebbles() {
                         <label className='w-full font-semibold'>Upload JSON:
                             <input type='file' accept='.json' onChange={(e) => setFile(e.target.files ? e.target.files[0] : null)} className="mt-2 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
                         </label>
+                    </div>
+                )}
+                {source === 'draw' && (
+                    <div className="flex flex-col gap-4 w-full">
+                        <div className="w-full">
+                            <h3 className="font-bold text-center text-blue-600 mb-2">Draw G1</h3>
+                            <GraphEditor prefix="v" onUpdate={setDrawnG1} />
+                        </div>
+                        <div className="w-full mt-4">
+                            <h3 className="font-bold text-center text-blue-600 mb-2">Draw G2</h3>
+                            <GraphEditor prefix="u" onUpdate={setDrawnG2} />
+                        </div>
                     </div>
                 )}
                 <div className="w-full">
