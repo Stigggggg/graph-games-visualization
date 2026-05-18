@@ -17,6 +17,12 @@ export function Graph({ data, color, selectedNodes = [], pebbles, nodeClick }: G
       nodeClickRef.current = nodeClick;
   }, [nodeClick]);
 
+  const colors: Record<string, string> = {
+    'a': '#e74c3c',
+    'b': '#e84393',
+    'c': '#9b59b6'
+  };
+
   useEffect(() => {
     if (!cyContainerRef.current) return;
 
@@ -27,7 +33,7 @@ export function Graph({ data, color, selectedNodes = [], pebbles, nodeClick }: G
         {
           selector: 'node',
           style: {
-            'background-color': color,
+            'background-color': (e: any) => colors[e.data('color')] || '#95a5a6',
             'label': (e: any) => `${e.data('id')}, ${e.data('color')}`,
             'color': '#fff',
             'text-valign': 'center',
@@ -87,7 +93,7 @@ export function Graph({ data, color, selectedNodes = [], pebbles, nodeClick }: G
       if (cyInstanceRef.current) {
           cyInstanceRef.current.nodes().removeClass('selected');
           cyInstanceRef.current.nodes().forEach(node => {
-              node.style('label', `${node.id()}, ${node.data('color')}`);
+              node.style('label', node.id());
           });
           
           selectedNodes.forEach(nodeId => {
@@ -99,7 +105,7 @@ export function Graph({ data, color, selectedNodes = [], pebbles, nodeClick }: G
                   const node = cyInstanceRef.current!.getElementById(nodeId as string);
                   if (node.length > 0) {
                       node.addClass('selected');
-                      const oldLabel = `${node.id()}, ${node.data('color')}`;
+                      const oldLabel = `${node.id()}`;
                       node.style('label', `${oldLabel} P${pebbleId}`);
                   }
               });

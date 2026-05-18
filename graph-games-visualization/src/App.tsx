@@ -104,7 +104,7 @@ function MenuEF() {
                         <select value={source} onChange={(e) => setSource(e.target.value)} className={inputClass}>
                             <option value='random'>Randomly generated</option>
                             <option value='file'>Uploaded from file</option>
-                            <option value='draw' disabled>Draw</option>
+                            <option value='draw'>Draw</option>
                         </select>
                     </label>
                 </div>
@@ -339,7 +339,7 @@ function MenuPebbles() {
                     <select value={source} onChange={(e) => setSource(e.target.value)} className={inputClass}>
                         <option value='random'>Randomly generated</option>
                         <option value='file'>Uploaded from file</option>
-                        <option value='draw' disabled>Draw</option>
+                        <option value='draw'>Draw</option>
                     </select>
                 </label>
                 {source === 'random' && (
