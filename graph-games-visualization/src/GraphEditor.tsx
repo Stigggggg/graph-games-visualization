@@ -13,16 +13,15 @@ export function GraphEditor({ onUpdate, prefix }: GraphEditorProps) {
     const selectedNode = useRef<string | null>(null);
     const [activeColor, setActiveColor] = useState<'a' | 'b' | 'c'>('a');
     const colorRef = useRef(activeColor);
-    
-    useEffect(() => {
-        colorRef.current = activeColor;
-    }, [activeColor]);
-
     const colors = {
         'a': '#e74c3c',
         'b': '#e84393',
         'c': '#9b59b6'
     };
+    
+    useEffect(() => {
+        colorRef.current = activeColor;
+    }, [activeColor]);
 
     useEffect(() => {
         if (!cyContainerRef.current) {
@@ -117,19 +116,14 @@ export function GraphEditor({ onUpdate, prefix }: GraphEditorProps) {
         <div className="flex flex-col items-center">
             <div className="flex gap-4 mb-3">
                 {(['a', 'b', 'c'] as const).map((color) => (
-                    <button
-                        key={color}
-                        onClick={() => setActiveColor(color)}
-                        className={`px-4 py-1 rounded-full text-white font-bold text-sm transition-transform ${
-                            activeColor === color ? 'scale-110 shadow-md border-2 border-gray-800' : 'opacity-70 hover:opacity-100'
-                        }`}
-                        style={{ backgroundColor: colors[color] }}
-                    >
+                    <button key={color} onClick={() => setActiveColor(color)} className={`px-4 py-1 rounded-full text-white font-bold text-sm transition-transform ${activeColor === color ? 'scale-110 shadow-md border-2 border-gray-800' : 'opacity-70 hover:opacity-100'}`} style={{ backgroundColor: colors[color] }}>
                         Color {color.toUpperCase()}
                     </button>
                 ))}
             </div>
+
             <div className="text-sm text-gray-500 mb-1">Click background to add node. Click two nodes to add edge.</div>
+            
             <div ref={cyContainerRef} className="w-full max-w-[400px] h-[300px] border-2 border-dashed border-gray-400 bg-gray-50 rounded-xl relative cursor-crosshair" />
         </div>
     );

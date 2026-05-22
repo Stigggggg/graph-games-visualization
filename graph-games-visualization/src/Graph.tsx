@@ -13,10 +13,6 @@ export function Graph({ data, color, selectedNodes = [], pebbles, nodeClick }: G
   const cyContainerRef = useRef<HTMLDivElement>(null);
   const cyInstanceRef = useRef<cytoscape.Core | null>(null);
   const nodeClickRef = useRef(nodeClick);
-  useEffect(() => {
-      nodeClickRef.current = nodeClick;
-  }, [nodeClick]);
-
   const colors: Record<string, string> = {
     'a': '#e74c3c',
     'b': '#e84393',
@@ -24,7 +20,15 @@ export function Graph({ data, color, selectedNodes = [], pebbles, nodeClick }: G
   };
 
   useEffect(() => {
-    if (!cyContainerRef.current) return;
+      nodeClickRef.current = nodeClick;
+  }, [nodeClick]);
+  
+
+  useEffect(() => {
+    const hasPos = data.some((element: any) => element.position !== undefined)
+    if (!cyContainerRef.current) {
+      return;
+    }
 
     const cy = cytoscape({
       container: cyContainerRef.current,
@@ -65,13 +69,14 @@ export function Graph({ data, color, selectedNodes = [], pebbles, nodeClick }: G
         }
       ],
       layout: {
-        name: 'circle',
+        name: hasPos ? 'preset' : 'circle',
         fit: true,
         padding: 40
       }
     });
 
     cyInstanceRef.current = cy;
+
     cy.on('tap', 'node', async (e) => {
         const node = e.target;
         const nodeId = node.id();
