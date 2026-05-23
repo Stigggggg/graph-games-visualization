@@ -69,7 +69,22 @@ function MenuEF() {
                 if (drawnG1.length === 0 || drawnG2.length === 0) {
                     throw new Error('Please draw both graphs!');
                 }
+                const formatGraph = (elements: any[]) => ({
+                    nodes: elements.filter(e => e.group === 'nodes').map(e => ({
+                        data: e.data,
+                        position: e.position
+                    })),
+                    edges: elements.filter(e => e.group === 'edges').map(e => ({
+                        data: e.data,
+                        position: e.position
+                    }))
+                });
+                settings.custom = {
+                    g1: formatGraph(drawnG1),
+                    g2: formatGraph(drawnG2)
+                };
                 settings.source = 'file';
+                
             }
 
             const response = await fetch('http://127.0.0.1:5000/generate-ef', {
