@@ -8,7 +8,7 @@ app = Flask(__name__)
 CORS(app)
 games = {}
 
-# function that generates a directed graph using NetworkX library
+# generates a NetworkX random directed graph 
 def generate_nx_graph(n, m):
     G = nx.DiGraph()
     colors = ['a', 'b', 'c']
@@ -26,37 +26,55 @@ def generate_nx_graph(n, m):
         v = random.choice(nodes)
         if not G.has_edge(u, v):
             edge_color = random.choice(colors)
-            # edges do not need an id, they are not repeated so source and target is enough
+            # edges identified by source->target pairs
             G.add_edge(u, v, color=edge_color)
             added_edges += 1
     
     return G
 
-# modification of a function above, it parses a .json file to a NetworkX directed graph
+# modification of a function above, parses a .json file to a NetworkX directed graph (used in file and draw mode)
 def generate_nx_json(data):
     G = nx.DiGraph()
 
     for node in data.get('nodes', []):
-        G.add_node(node['id'], color=node['color'])
+        node_data = node.get('data', node)
+        if 'id' not in node_data:
+            raise ValueError('All nodes must have an id property')
+        node_pos = node.get('position', None)
+        G.add_node(node_data['id'], color=node_data.get('color', 'a'), position=node_pos)
 
     for edge in data.get('edges', []):
-        G.add_edge(edge['source'], edge['target'], color=edge.get('color', 'a'))
+        edge_data = edge.get('data', edge)
+        if 'source' not in edge_data or 'target' not in edge_data:
+            raise ValueError("All edges must specify 'source' and 'target' nodes!")
+        G.add_edge(edge_data['source'], edge_data['target'], color=edge_data.get('color', 'a'))
+
+    V = G.number_of_nodes()
+    E = G.number_of_edges()
+    max_edges = V * V
+    if E > max_edges:
+        raise ValueError(f"Max edges number cannot be bigger than V*V!")
+    if V == 0:
+        raise ValueError("Graphs must contain at least one node!")
 
     return G
 
-# function that parses nx.DiGraph() into cytoscape constructor format
+# parses nx.DiGraph() into cytoscape constructor format following these rules:
 # graph must be a list called 'elements' and its keys must be dictionaries with 'data' as a key
 # id is obligatory to a vertice, in edges we add a custom one
 def parse_to_cytoscape(G):
     elements = []
 
     for node, data in G.nodes(data=True):
-        elements.append({
+        node_dict = {
             'data': {
-                'id': node, 
-                'color': data['color']
+                'id': node,
+                'color': data.get('color', 'a')
             }
-        })
+        }
+        if 'position' in data and data['position'] is not None:
+            node_dict['position'] = data['position']
+        elements.append(node_dict)
 
     for u, v, data in G.edges(data=True):
         elements.append({
@@ -64,19 +82,19 @@ def parse_to_cytoscape(G):
                'id': f'{u}->{v}',
                'source': u,
                'target': v,
-               'color': data['color']
+               'color': data.get('color', 'a')
            } 
         })
     
     return elements
 
-# function that checks partial isomorphism for graphs in EF game after every turn of both Spoiler and Duplicator
+# checks partial isomorphism for graphs in EF game after every turn of both Spoiler and Duplicator
 def check_iso(g1, g2, moves_g1, moves_g2):
     for i in range(len(moves_g1)):
         u_i = moves_g1[i]
         v_i = moves_g2[i]
 
-        # 1st condition of iso: colors must be equal (unary relation)
+        # 1st condition of iso: unary relations (colors) must be preserved
         if g1.nodes[u_i]['color'] != g2.nodes[v_i]['color']:
             return False, 'Different colors'
         
@@ -86,12 +104,11 @@ def check_iso(g1, g2, moves_g1, moves_g2):
             has_edge_g1 = g1.has_edge(u_i, u_j)
             has_edge_g2 = g2.has_edge(v_i, v_j)
 
-            # 2nd condition: every node must have the same number of edges going in and out
+            # 2nd condition: binary relations (directed edge between selected nodes) must be preserved
             if has_edge_g1 != has_edge_g2:
                 return False, 'Difference in edges'
             
-            # 3rd condition: if one player reused a node, the second one has to do a similar thing
-            # if not met, no chance for isomorphism
+            # 3rd condition: if one player reused a node, the second one has to do a similar move
             if (u_i == u_j) and (v_i != v_j): 
                 return False, 'Equality error, G1 reused a node'
             if (u_i != u_j) and (v_i == v_j):
@@ -99,7 +116,7 @@ def check_iso(g1, g2, moves_g1, moves_g2):
     
     return True, 'Duplicator survives'
 
-# similar function, also checks partial isomorphism but with pebbles included
+# validates partial isomorphism with pebbles laying on vertices
 # p1 and p2 are dictionaries {pebble_number: node_id}
 def check_iso_pebbles(g1, g2, p1, p2):
     active_pebbles = []
@@ -112,7 +129,7 @@ def check_iso_pebbles(g1, g2, p1, p2):
         u = p1[p_id]
         v = p2[p_id]
         
-        # 1st condition: colors under pebbles must be the same
+        # 1st condition of iso: unary relations (colors under pebbles) must be preserved
         if g1.nodes[u]['color'] != g2.nodes[v]['color']:
             return False, f'Different colors under pebble {p_id}'
         
@@ -120,12 +137,11 @@ def check_iso_pebbles(g1, g2, p1, p2):
             u2 = p1[p_id2]
             v2 = p2[p_id2]
             
-            # 2nd condition: every node must have the same number of edges going in and out 
+            # 2nd condition: binary relations (directed edge between selected nodes) must be preserved
             if g1.has_edge(u, u2) != g2.has_edge(v, v2):
                 return False, f'Difference in edges between pebbles {p_id} and {p_id2}'
            
-            # 3rd condition: if one player reused a node, the second one has to do a similar thing
-            # if not met, no chance for isomorphism
+            # 3rd condition: if one player reused a node, the second one has to do a similar move
             if (u == u2) and (v != v2): 
                 return False, 'Equality error, G1 put more pebbles on a node'
             if (u != u2) and (v == v2):
@@ -133,7 +149,7 @@ def check_iso_pebbles(g1, g2, p1, p2):
     
     return True, 'Duplicator survives'
 
-# duplicator AI for pebbles
+# pebbles AI agent
 def get_pebble_move(game):
     # pulling state from game object
     g1 = game['g1'] 
@@ -152,7 +168,7 @@ def get_pebble_move(game):
     valid_moves = []
     best_move = None
 
-    # testing all possible moves, will duplicator survive
+    # greedy approach to survive the current round
     for v in game[ai_graph].nodes():
         test_p1 = dict(p1) 
         test_p2 = dict(p2)
@@ -167,7 +183,7 @@ def get_pebble_move(game):
         if survives:
             valid_moves.append(v)
     
-    # random choosing best move from valid list 
+    # randomly choosing best move from valid list 
     if valid_moves:
         best_move = random.choice(valid_moves)
     else:
@@ -181,7 +197,7 @@ def get_pebble_move(game):
     
     return best_move, ai_graph
 
-# duplicator AI for EF games
+# EF game AI agent
 def get_move(game):
     # pulling state from game object
     g1 = game['g1']
@@ -198,7 +214,7 @@ def get_move(game):
     valid_moves = []
     best_move = None
 
-    # testing all possible moves, using minmax to choose best one
+    # testing all possible moves, using minimax to choose best one
     for v in game[ai_graph].nodes():
         test1 = list(game['moves_g1'])
         test2 = list(game['moves_g2'])
@@ -216,7 +232,7 @@ def get_move(game):
                 best_move = v
                 break
     
-    # if there is not a winning move, we choose the node with closest degree to the last pick
+    # mitigating combinatoric explosion by selecting a node with the closest degree matching the Spoiler's move
     if best_move is None:
         if valid_moves:
             if spoiler_graph == 'g1':
@@ -242,7 +258,7 @@ def duplicator_can_win(g1, g2, moves_g1, moves_g2, current_round, max_rounds):
     if current_round == max_rounds:
         return True
     
-    # we are looking for an answer for every Spoiler move
+    # recursively looking for an answer to all possible Spoiler moves
     for spoiler_graph in ['g1', 'g2']:
         if spoiler_graph == 'g1':
             s_graph = g1
@@ -288,8 +304,7 @@ def duplicator_can_win(g1, g2, moves_g1, moves_g2, current_round, max_rounds):
     
     return True
 
-# generating ef game from received data
-# only random and file modes are available here
+# endpoint that initializes a new EF game and sets up random or file mode data
 @app.route('/generate-ef', methods=['POST'])
 def generate():
     data = request.json
@@ -297,7 +312,7 @@ def generate():
     mode = data.get('mode', 'human')
     source = data.get('source', 'random')
 
-    # choosing function to generate graphs, depends on a game mode
+    # choosing a method for generating graphs based on a game mode received from payload
     if source == 'random':
         n = int(data.get('n'))
         m = int(data.get('m'))
@@ -310,7 +325,7 @@ def generate():
         
         g1 = generate_nx_graph(n, m)
         g2 = generate_nx_graph(n, m)
-
+    
     elif source == 'file':
         custom_data = data.get('custom')
         
@@ -319,8 +334,13 @@ def generate():
                 'error': 'Invalid JSON format.'
             }), 400
         
-        g1 = generate_nx_json(custom_data['g1'])
-        g2 = generate_nx_json(custom_data['g2'])
+        try:
+            g1 = generate_nx_json(custom_data['g1'])
+            g2 = generate_nx_json(custom_data['g2'])
+        except ValueError as e:
+            return jsonify({
+                'error': str(e)
+            }), 400
 
     else:
         return jsonify({
@@ -348,6 +368,7 @@ def generate():
         'g2': cyto_g2
     })
 
+# endpoint that initializes a new pebbles game allocating the k-pebbles parameter
 @app.route('/generate-pebbles', methods=['POST'])
 def generate_pebbles():
     data = request.json
@@ -355,26 +376,45 @@ def generate_pebbles():
     mode = data.get('mode', 'human')
     source = data.get('source', 'random')
 
+   # choosing a method for generating graphs based on a game mode received from payload
     if source == 'random':
         n = int(data.get('n'))
         m = int(data.get('m'))
-
-        if m > n * n:
+        max_edges = n * n
+        
+        if m > max_edges:
             return jsonify({
-                'error': 'Too many edges'
+                'error': f'Error: for {n} maximum number of edges is {max_edges}'
             }), 400
         
         g1 = generate_nx_graph(n, m)
         g2 = generate_nx_graph(n, m)
-
+    
     elif source == 'file':
         custom_data = data.get('custom')
-        g1 = generate_nx_json(custom_data['g1'])
-        g2 = generate_nx_json(custom_data['g2'])
+        
+        if not custom_data or 'g1' not in custom_data or 'g2' not in custom_data:
+            return jsonify({
+                'error': 'Invalid JSON format.'
+            }), 400
+        
+        try:
+            g1 = generate_nx_json(custom_data['g1'])
+            g2 = generate_nx_json(custom_data['g2'])
+        except ValueError as e:
+            return jsonify({
+                'error': str(e)
+            }), 400
 
+    else:
+        return jsonify({
+            'error': 'Unknown source.'
+        }), 400
+    
+    cyto_g1 = parse_to_cytoscape(g1)
+    cyto_g2 = parse_to_cytoscape(g2)
     game_id = str(uuid.uuid4())
     games[game_id] = {
-        'type': 'pebbles',
         'g1': g1,
         'g2': g2,
         'k': k,
@@ -388,10 +428,11 @@ def generate_pebbles():
 
     return jsonify({
         'game_id': game_id, 
-        'g1': parse_to_cytoscape(g1), 
-        'g2': parse_to_cytoscape(g2)
+        'g1': cyto_g1, 
+        'g2': cyto_g2
     })
 
+# EF game controller, handles state changes, triggers agents and evaluates win conditions
 @app.route('/move', methods=['POST'])
 def move():
     data = request.json
@@ -436,20 +477,23 @@ def move():
                     'status': 'game_over', 
                     'winner': 'duplicator (AI)', 
                     'reason': f"AI chose {ai_node} in {ai_graph} and survived all rounds!",
-                    'moves_g1': game['moves_g1'], 'moves_g2': game['moves_g2']
+                    'moves_g1': game['moves_g1'], 
+                    'moves_g2': game['moves_g2']
                 })
                 
             return jsonify({
                 'status': 'ok', 
                 'message': f"AI matched with {ai_node} in {ai_graph}. Next round!",
-                'moves_g1': game['moves_g1'], 'moves_g2': game['moves_g2']
+                'moves_g1': game['moves_g1'], 
+                'moves_g2': game['moves_g2']
             })
             
         else:
             game['turn'] = 'duplicator'
             return jsonify({
                 'status': 'ok', 'message': 'Waiting for duplicator to play',
-                'moves_g1': game['moves_g1'], 'moves_g2': game['moves_g2']
+                'moves_g1': game['moves_g1'], 
+                'moves_g2': game['moves_g2']
             })
             
     elif game['turn'] == 'duplicator':
@@ -499,6 +543,7 @@ def move():
             'moves_g2': game['moves_g2']
         })
 
+# pebbles game controller, handles state changes, triggers agents and evaluates win conditions
 @app.route('/move-pebble', methods=['POST'])
 def move_pebble():
     data = request.json
@@ -596,5 +641,3 @@ def move_pebble():
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
-
-    

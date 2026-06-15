@@ -10,8 +10,8 @@ export interface GraphProps {
 }
 
 export function Graph({ data, color, selectedNodes = [], pebbles, nodeClick }: GraphProps) {
-  const cyContainerRef = useRef<HTMLDivElement>(null);
-  const cyInstanceRef = useRef<cytoscape.Core | null>(null);
+  const cyContainerRef = useRef<HTMLDivElement>(null); // div in DOM tree
+  const cyInstanceRef = useRef<cytoscape.Core | null>(null); // access to graph without recreating it
   const nodeClickRef = useRef(nodeClick);
   const colors: Record<string, string> = {
     'a': '#e74c3c',
@@ -19,17 +19,22 @@ export function Graph({ data, color, selectedNodes = [], pebbles, nodeClick }: G
     'c': '#9b59b6'
   };
 
-  useEffect(() => {
+  // guarantees the newest state of nodeClick, for example after choosing the vertice
+  useEffect(() => { 
       nodeClickRef.current = nodeClick;
   }, [nodeClick]);
   
 
   useEffect(() => {
+    // hasPos enables to distinguish draw mode, when it is not undefined, we draw vertices in the exact position they were clicked
     const hasPos = data.some((element: any) => element.position !== undefined)
     if (!cyContainerRef.current) {
       return;
     }
-
+    
+    // main graph instance, with a specific syntax
+    // container is a space where a graph is drawn, elements are vertices and edges
+    // cytoscape.js has its .css version, a different class was designed for selected (clicked on) vertices
     const cy = cytoscape({
       container: cyContainerRef.current,
       elements: data,
@@ -77,6 +82,10 @@ export function Graph({ data, color, selectedNodes = [], pebbles, nodeClick }: G
 
     cyInstanceRef.current = cy;
 
+    // clicking on vertice handling
+    // we change color by adding selected class
+    // then we send the move to backend with async function
+    // if the move is not approved, we remove selected class
     cy.on('tap', 'node', async (e) => {
         const node = e.target;
         const nodeId = node.id();
@@ -88,23 +97,31 @@ export function Graph({ data, color, selectedNodes = [], pebbles, nodeClick }: G
             }
         }
     });
-
+    
+    // cleanup function, happens when the component is destroyed or data/color is changed
+    // helps us to avoid memory leaks
     return () => {
       cy.destroy();
     };
   }, [data, color]);
 
+  // rebuilding the graph after the state changes
   useEffect(() => {
       if (cyInstanceRef.current) {
+          // removing selected class from all the nodes
           cyInstanceRef.current.nodes().removeClass('selected');
+          // removing all the labels
           cyInstanceRef.current.nodes().forEach(node => {
               node.style('label', node.id());
           });
           
+          // adding selected class once again for every selected node
           selectedNodes.forEach(nodeId => {
               cyInstanceRef.current!.getElementById(nodeId).addClass('selected');
           });
-
+          
+          // changing pebbles object to the pair list
+          // after that we update the label with pebbles laying on vertices
           if (pebbles) {
               Object.entries(pebbles).forEach(([pebbleId, nodeId]) => {
                   const node = cyInstanceRef.current!.getElementById(nodeId as string);

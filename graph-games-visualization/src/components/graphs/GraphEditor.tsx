@@ -6,13 +6,14 @@ export interface GraphEditorProps {
     prefix: string;
 }
 
+// Graph component is read-only, here we can modify the structure, not only work on given data
 export function GraphEditor({ onUpdate, prefix }: GraphEditorProps) {
     const cyContainerRef = useRef<HTMLDivElement>(null);
     const cyInstanceRef = useRef<cytoscape.Core | null>(null);
-    const nodeIdCounter = useRef(1);
+    const nodeIdCounter = useRef(1); // what number will the next vertice receive
     const selectedNode = useRef<string | null>(null);
-    const [activeColor, setActiveColor] = useState<'a' | 'b' | 'c'>('a');
-    const colorRef = useRef(activeColor);
+    const [activeColor, setActiveColor] = useState<'a' | 'b' | 'c'>('a'); // which color was chosen
+    const colorRef = useRef(activeColor); // keeping track of the color without reloading the board
     const colors = {
         'a': '#e74c3c',
         'b': '#e84393',
@@ -28,6 +29,7 @@ export function GraphEditor({ onUpdate, prefix }: GraphEditorProps) {
             return;
         }
 
+        // empty graph object
         const cy = cytoscape({
             container: cyContainerRef.current,
             elements: [],
@@ -74,6 +76,9 @@ export function GraphEditor({ onUpdate, prefix }: GraphEditorProps) {
 
         cy.on('tap', (event) => {
             const target = event.target;
+            // event 1: clicking on the background -> creating a vertice
+            // a vertice receives its new id and color, its data and position are read
+            // it is added to the nodes group in cytoscape
             if (target === cy) {
                 const newId = `${prefix}${nodeIdCounter.current}`;
                 nodeIdCounter.current++;
@@ -86,12 +91,13 @@ export function GraphEditor({ onUpdate, prefix }: GraphEditorProps) {
                     cy.getElementById(selectedNode.current).removeClass('selected');
                     selectedNode.current = null;
                 }
-            } else if (target.isNode()) {
+            } else if (target.isNode()) { // event 2: clicking on a node means that we create an edge
                 const clicked = target.id();
+                // source is chosen
                 if (!selectedNode.current) {
                     selectedNode.current = clicked;
                     target.addClass('selected');
-                } else {
+                } else { // target is chosen
                     if (selectedNode.current !== clicked) {
                         const edgeId = `${selectedNode.current}->${clicked}`;
                         if (cy.getElementById(edgeId).length === 0) {
@@ -112,6 +118,7 @@ export function GraphEditor({ onUpdate, prefix }: GraphEditorProps) {
         return () => cy.destroy();
     }, [prefix]);
 
+    // graph drawing menu
     return (
         <div className="flex flex-col items-center">
             <div className="flex gap-4 mb-3">
