@@ -36,7 +36,7 @@ function PebblesGame() {
 
         try {
             const apiURL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000'
-            const response = await fetch(`${apiURL}/move`, {
+            const response = await fetch(`${apiURL}/move-pebble`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
