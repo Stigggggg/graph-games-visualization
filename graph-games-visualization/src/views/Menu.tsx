@@ -22,7 +22,7 @@ function Menu() {
                         Pebbles
                     </Button>
                     <Button disabled>
-                        Rules
+                        More...
                     </Button>
                 </div>
             </Card>

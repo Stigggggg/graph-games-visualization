@@ -73,7 +73,8 @@ function EFMenu() {
             }
             
             // game session is generated after backend API request
-            const response = await fetch("http://127.0.0.1:5000/generate-ef", {
+            const apiURL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000'
+            const response = await fetch(`${apiURL}/generate-ef`, {
                 method: "POST",
                 headers: { 
                     "Content-Type": "application/json"
@@ -187,6 +188,7 @@ function EFMenu() {
                 </Label>
         
                 <Label>
+                    Game mode:
                     <Select
                         value={mode}
                         onChange={(e) => setMode(e.target.value)}
