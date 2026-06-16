@@ -1,6 +1,6 @@
 # An Application for Visualizing Games on Finite Graphs with a Special Focus on Ehrenfeucht–Fraïssé Games
 
-This is the source code for an engineering thesis project designed to visualize and simulate graph theory games, specifically "Pebbling" and "Ehrenfeucht-Fraïssé (EF)".
+This is the source code for an engineering thesis project designed to visualize and simulate graph theory games, specifically Pebbles and Ehrenfeucht-Fraïssé (EF).
 
 ## Overview
 
