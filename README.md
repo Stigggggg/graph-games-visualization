@@ -62,20 +62,18 @@ A robust testing strategy was implemented. The repo contains unit tests for both
 Run unit and API integration tests inside the running flask container:
 ```bash
 cd flask
-docker-compose exec flask pytest
+pytest test_app.py
 ```
 
 ### 2. Frontend unit tests (Vitest)
 Run unit tests for React components inside the running Vite container:
 ```bash
-cd src
-docker-compose exec vite npm run test:unit
+npm run test:unit
 ```
 
 ### 3. End-to-End browser tests (Playwright)
 To run system tests in real browser engine (Chromium), you need to have the server running in Docker, but run the tests from your host machine.
 ```
-cd src/tests/e2e
 npm run test:browser:ui
 ```
 
