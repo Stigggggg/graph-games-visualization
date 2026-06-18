@@ -5,8 +5,8 @@ import { describe, it, expect, vi } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import EFMenu from '../../src/views/EFMenu';
 
-vi.mock('../components/graphs/GraphEditor', () => ({
-    GraphEditor: () => <div data-testid="mock-graph-editor" />
+vi.mock('../../src/components/graphs/GraphEditor', () => ({
+    GraphEditor: () => <div data-testid="graph-editor-mock" />
 }));
 
 const renderMenu = () => render(
@@ -19,7 +19,7 @@ describe('EFMenu View', () => {
     it('V and E shown for random mode', () => {
         renderMenu();
         expect(screen.getByLabelText(/Vertices \(n\):/i)).toBeInTheDocument();
-        expect(screen.getByLabelText(/Edges \(n\):/i)).toBeInTheDocument();
+        expect(screen.getByLabelText(/Edges \(m\):/i)).toBeInTheDocument();
     });
 
     it('hides V and E and shows file input', async () => {
@@ -37,7 +37,7 @@ describe('EFMenu View', () => {
         renderMenu();
         const sourceSelect = screen.getByLabelText(/Graph source:/i);
         await user.selectOptions(sourceSelect, 'draw');
-        const graphEditors = screen.getAllByTestId('mock-graph-editor');
+        const graphEditors = screen.getAllByTestId('graph-editor-mock');
         expect(graphEditors).toHaveLength(2);
     });
 
