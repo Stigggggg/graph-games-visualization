@@ -58,8 +58,8 @@ function EFGame() {
 
         try {
             const data = await EFMove(state.game_id, graphId, nodeId);
-            setMovesG1(data.movesG1 || []);
-            setMovesG2(data.movesG2 || []);
+            setMovesG1(data.moves_g1 || []);
+            setMovesG2(data.moves_g2 || []);
 
             if (state.mode === "human") {
                 if (turn === "spoiler") {
@@ -80,7 +80,7 @@ function EFGame() {
             }
 
             setMessage(data.message || `Winner: ${data.winner}, Reason: ${data.reason}`);
-            if (data.status !== "game_over") {
+            if (data.status === "game_over") {
                 setStatus('game_over');
             }
 

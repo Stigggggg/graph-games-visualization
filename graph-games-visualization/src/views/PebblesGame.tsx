@@ -71,7 +71,7 @@ function PebblesGame() {
             }
 
             setMessage(data.message || `Winner: ${data.winner}, Reason: ${data.reason}`);
-            if (data.status !== "game_over") {
+            if (data.status === "game_over") {
                 setStatus('game_over');
             }
 
