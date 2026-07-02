@@ -9,12 +9,15 @@ function PebblesGame() {
     const location = useLocation();
     const state = location.state as any;
     const [status, setStatus] = useState('playing');
-    const [message, setMessage] = useState('Waiting for first move');
+    const [serverMessage, setServerMessage] = useState('Waiting for first move');
     const [turn, setTurn] = useState('spoiler');
     const [active, setActive] = useState<number>(1);
     const [p1, setP1] = useState<Record<string, string>>({});
     const [p2, setP2] = useState<Record<string, string>>({});
     const [playerGraph, setPlayerGraph] = useState<string | null>(null);
+    const [winner, setWinner] = useState<string | null>(null);
+    const [reason, setReason] = useState<string | null>(null);
+    const [error, setError] = useState<string | null>(null);
 
     if (!state) {
         return (
@@ -41,43 +44,65 @@ function PebblesGame() {
             if (playerGraph === graphId) {
                 return `${title} (Spoiler)`;
             } else {
-                return `${title} (Duplicator)`;
+                return `${title} (Duplicator's target)`;
             }
         }
 
         return title;
     }
 
+    const getMessage = () => {
+        if (turn === "spoiler") {
+            return `Spoiler: place pebble P${active} in either G1 or G2.`;
+        }
+
+        let target = "G1"
+        if (playerGraph === "g1") {
+            target = "G2";
+        }
+
+        return `Duplicator: match pebble P${active} in ${target}`;
+    }
+
     const move = async (graphId: string, nodeId: string) => {
         if (status === 'game_over') {
             return false;
+            setError(null);
         } 
 
         try {
            const data = await PebbleMove(state.game_id, graphId, nodeId, active);
+           
+           if (data.error) {
+                setError(data.error);
+                return false;
+           }
+           
            setP1(data.p1 || {});
            setP2(data.p2 || {});
+           setServerMessage(data.message || "");
 
-           if (state.mode === "human") {
-                if (turn === "spoiler") {
-                    setTurn('duplicator');
-                    setPlayerGraph(graphId);
+           if (data.status === "game_over") {
+                setStatus("game_over");
+                setWinner(data.winner);
+                setReason(data.reason);
+           } else {
+                if (state.mode === "human") {
+                    if (turn === "spoiler") {
+                        setTurn('duplicator');
+                        setPlayerGraph(graphId);
+                    } else {
+                        setTurn('spoiler');
+                        setPlayerGraph(null);
+                    }
                 } else {
-                    setTurn('spoiler');
                     setPlayerGraph(null);
                 }
-            } else {
-                setPlayerGraph(null);
-            }
-
-            setMessage(data.message || `Winner: ${data.winner}, Reason: ${data.reason}`);
-            if (data.status === "game_over") {
-                setStatus('game_over');
-            }
-
-            return true;
+           }
+           
+           return true;
         } catch (e: any) {
-            alert(e.message);
+            setError(e.message || "Invalid move or server error!");
             return false;
         }
     }
@@ -97,13 +122,51 @@ function PebblesGame() {
         </div>
     );
 
+    const GameDashboard = (
+        <div className="w-full flex flex-col gap-4">
+            <div className="flex justify-between items-center border-b border-gray-200 pb-3">
+                <div className="text-lg font-bold text-gray-700">
+                    Pebbles: <span className="text-blue-600">{state.k}</span>
+                </div>
+                {status === "playing" && (
+                    <div className="text-lg font-bold text-gray-700">
+                        Turn: <span className={turn === "spoiler" ? "text-red-500" : "text-green-600"}>
+                            {turn.toUpperCase()}
+                        </span>
+                    </div>
+                )}
+            </div>
+
+            {status === 'playing' ? (
+                <div className="bg-blue-50 border border-blue-200 text-blue-800 px-4 py-3 rounded-lg text-center shadow-sm flex flex-col gap-1">
+                    <span className="font-bold text-lg">{getMessage()}</span>
+                    {serverMessage && <span className="text-sm opacity-80 font-medium">Server: {serverMessage}</span>}
+                </div>
+            ) : (
+                <div className="flex flex-col gap-3 items-center">
+                    <div className={`text-2xl font-black uppercase tracking-wide ${winner?.includes("spoiler") ? "text-red-500" : "text-green-600"}`}>
+                        WINNER: {winner}
+                    </div>
+                    <div className="bg-gray-100 border border-gray-300 text-gray-800 px-6 py-2 rounded-lg text-center font-medium w-full md:w-3/4">
+                        Reason: {reason}
+                    </div>
+                </div>
+            )}
+
+            {error && (
+                <div className="border border-red-300 text-red-600 px-4 py-2 rounded-lg w-full text-center font-medium animate-pulse shadow-sm">
+                    ⚠️ {error}
+                </div>
+            )}
+        </div>
+    );
+
     return (
         <BaseGame
             title="Pebble Game"
-            message={message}
             status={status}
+            dashboard={GameDashboard}
             menuRoute="/pebbles-menu"
-            statusDetail={<div className='text-gray-800'>Number of pebbles: <span className='text-blue-600'>{state.k}</span></div>}
             controls={PebbleSelector}
             g1Title={getTitle('g1')}
             g2Title={getTitle('g2')}
