@@ -1,8 +1,8 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import uuid
-from utils import generate_nx_graph, generate_nx_json, parse_to_cytoscape
-from game_logic import check_iso, check_iso_pebbles, get_move, get_pebble_move
+from flask.graph_utils import generate_nx_graph, generate_nx_json, parse_to_cytoscape
+from flask.game_logic import check_iso, check_iso_pebbles, get_move, get_pebble_move
 
 app = Flask(__name__)
 CORS(app)
