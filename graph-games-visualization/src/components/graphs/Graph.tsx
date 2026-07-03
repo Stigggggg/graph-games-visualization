@@ -161,11 +161,11 @@ export function Graph({ data, color, selectedNodes = [], pebbles, nodeClick }: G
                 const positionsX = ['85%', '15%', '85%', '15%'];
                 const positionsY = ['15%', '85%', '15%', '85%'];
                 node.style({
-                    'background-image': bgImages.join(', '),
-                    'background-position-x': bgImages.map((_, i) => positionsX[i % 4]).join(', '),
-                    'background-position-y': bgImages.map((_, i) => positionsY[i % 4]).join(', '),
-                    'background-width': bgImages.map(() => '14px').join(', '),
-                    'background-height': bgImages.map(() => '14px').join(', ')
+                    'background-image': bgImages,
+                    'background-position-x': bgImages.map((_, i) => positionsX[i % 4]),
+                    'background-position-y': bgImages.map((_, i) => positionsY[i % 4]),
+                    'background-width': bgImages.map(() => '14px'),
+                    'background-height': bgImages.map(() => '14px')
                 });
               }
             });
