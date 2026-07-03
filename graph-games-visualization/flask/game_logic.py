@@ -5,10 +5,12 @@ def check_iso(g1, g2, moves_g1, moves_g2):
     for i in range(len(moves_g1)):
         u_i = moves_g1[i]
         v_i = moves_g2[i]
+        color_g1 = g1.nodes[u_i]['color']
+        color_g2 = g2.nodes[v_i]['color']
 
         # 1st condition of iso: unary relations (colors) must be preserved
-        if g1.nodes[u_i]['color'] != g2.nodes[v_i]['color']:
-            return False, 'Different colors'
+        if color_g1 != color_g2:
+            return False, f'Color mismatch, node {u_i} in G1 has different color than node {v_i} in G2.'
         
         for j in range(len(moves_g1)):
             u_j = moves_g1[j]
@@ -17,16 +19,18 @@ def check_iso(g1, g2, moves_g1, moves_g2):
             has_edge_g2 = g2.has_edge(v_i, v_j)
 
             # 2nd condition: binary relations (directed edge between selected nodes) must be preserved
-            if has_edge_g1 != has_edge_g2:
-                return False, 'Difference in edges'
+            if has_edge_g1 and not has_edge_g2:
+                return False, f'Structural mismatch, there is an edge from {u_i} to {u_j} in G1, but no corresponding edge from {v_i} to {v_j} in G2.'
+            if not has_edge_g1 and has_edge_g2:
+                return False, f'Structural mismatch, there is an edge from {v_i} to {v_j} in G2, but no corresponding edge from {u_i} to {u_j} in G1.'
             
             # 3rd condition: if one player reused a node, the second one has to do a similar move
             if (u_i == u_j) and (v_i != v_j): 
-                return False, 'Equality error, G1 reused a node'
+                return False, f'Equality error, node {u_i} was reused in G1.'
             if (u_i != u_j) and (v_i == v_j):
-                return False, 'Equality error, G2 reused a node'
+                return False, f'Equality error, node {v_i} was reused in G2.'
     
-    return True, 'Duplicator survives'
+    return True, 'Isomorphism maintained! Duplicator matched the move successfully.'
 
 
 # validates partial isomorphism with pebbles laying on vertices
@@ -41,26 +45,33 @@ def check_iso_pebbles(g1, g2, p1, p2):
     for p_id in active_pebbles:
         u = p1[p_id]
         v = p2[p_id]
+        color_g1 = g1.nodes[u]['color']
+        color_g2 = g2.nodes[v]['color']
+
         
         # 1st condition of iso: unary relations (colors under pebbles) must be preserved
-        if g1.nodes[u]['color'] != g2.nodes[v]['color']:
-            return False, f'Different colors under pebble {p_id}'
+        if color_g1 != color_g2:
+            return False, f'Color mismatch, P{p_id} in G1 lies on a node with a different color than in G2.'
         
         for p_id2 in active_pebbles:
             u2 = p1[p_id2]
             v2 = p2[p_id2]
+            has_edge_g1 = g1.has_edge(u, u2)
+            has_edge_g2 = g2.has_edge(v, v2)
             
             # 2nd condition: binary relations (directed edge between selected nodes) must be preserved
-            if g1.has_edge(u, u2) != g2.has_edge(v, v2):
-                return False, f'Difference in edges between pebbles {p_id} and {p_id2}'
-           
+            if has_edge_g1 and not has_edge_g2:
+                return False, f'Structural mismatch, there is an edge between nodes under {p_id} and {p_id2} in G1, but no corresponding edge under these pebbles in G2.'
+            if not has_edge_g1 and has_edge_g2:
+                return False, f'Structural mismatch, there is an edge between nodes under {p_id} and {p_id2} in G2, but no corresponding edge under these pebbles in G1.'
+
             # 3rd condition: if one player reused a node, the second one has to do a similar move
             if (u == u2) and (v != v2): 
-                return False, 'Equality error, G1 put more pebbles on a node'
+                return False, f'Equality error, P{p_id} and P{p_id2} are places on the same node in G1, but on different nodes in G2.'
             if (u != u2) and (v == v2):
-                return False, 'Equality error, G2 put more pebbles on a node'
+                return False, f'Equality error, P{p_id} and P{p_id2} are places on the same node in G2, but on different nodes in G1.'
     
-    return True, 'Duplicator survives'
+    return True, 'Isomorphism maintained! Duplicator matched the move successfully.'
 
 
 def duplicator_can_win(g1, g2, moves_g1, moves_g2, current_round, max_rounds):

@@ -9,6 +9,24 @@ export interface GraphProps {
   nodeClick?: (nodeId: string) => Promise<boolean> | void | boolean;
 }
 
+const pebble_colors: Record<string, string> = {
+  '1': '#f1c40f',
+  '2': '#e67e22',
+  '3': '#1abc9c',
+  '4': '#fd79a8',
+  '5': '#34495e'
+};
+
+const getPebbleSvg = (pebbleId: string) => {
+  const bgColor = pebble_colors[pebbleId] || '#95a5a6';
+  const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+      <circle cx="12" cy="12" r="9" fill="${bgColor}" stroke="#ffffff" stroke-width="2"/>
+    </svg>
+  `;
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg.trim())}`;
+}
+
 export function Graph({ data, color, selectedNodes = [], pebbles, nodeClick }: GraphProps) {
   const cyContainerRef = useRef<HTMLDivElement>(null); // div in DOM tree
   const cyInstanceRef = useRef<cytoscape.Core | null>(null); // access to graph without recreating it
@@ -43,7 +61,7 @@ export function Graph({ data, color, selectedNodes = [], pebbles, nodeClick }: G
           selector: 'node',
           style: {
             'background-color': (e: any) => colors[e.data('color')] || '#95a5a6',
-            'label': (e: any) => `${e.data('id')}, ${e.data('color')}`,
+            'label': (e: any) => `${e.data('id')}`,
             'color': '#fff',
             'text-valign': 'center',
             'text-halign': 'center',
@@ -108,32 +126,52 @@ export function Graph({ data, color, selectedNodes = [], pebbles, nodeClick }: G
   // rebuilding the graph after the state changes
   useEffect(() => {
       if (cyInstanceRef.current) {
+          const cy = cyInstanceRef.current;
           // removing selected class from all the nodes
-          cyInstanceRef.current.nodes().removeClass('selected');
+          cy.nodes().removeClass('selected');
+          cy.nodes().style({
+            'background-image': 'none'
+          });
           // removing all the labels
           cyInstanceRef.current.nodes().forEach(node => {
-              node.style('label', node.id());
+              node.style('label', `${node.data('id')}`);
           });
           
           // adding selected class once again for every selected node
           selectedNodes.forEach(nodeId => {
-              cyInstanceRef.current!.getElementById(nodeId).addClass('selected');
+              cy.getElementById(nodeId).addClass('selected');
           });
           
           // changing pebbles object to the pair list
           // after that we update the label with pebbles laying on vertices
           if (pebbles) {
-              Object.entries(pebbles).forEach(([pebbleId, nodeId]) => {
-                  const node = cyInstanceRef.current!.getElementById(nodeId as string);
-                  if (node.length > 0) {
-                      node.addClass('selected');
-                      const oldLabel = `${node.id()}`;
-                      node.style('label', `${oldLabel} P${pebbleId}`);
-                  }
-              });
+            const pebblesByNode: Record<string, string[]> = {};
+            Object.entries(pebbles).forEach(([pebbleId, nodeId]) => {
+              if (!pebblesByNode[nodeId]) {
+                pebblesByNode[nodeId] = [];
+              }
+              pebblesByNode[nodeId].push(pebbleId);
+            });
+
+            Object.entries(pebblesByNode).forEach(([nodeId, pebbleIds]) => {
+              const node = cyInstanceRef.current!.getElementById(nodeId);
+              if (node.length > 0) {
+                node.addClass("selected");
+                const bgImages = pebbleIds.map(pid => getPebbleSvg(pid));
+                const positionsX = ['85%', '15%', '85%', '15%'];
+                const positionsY = ['15%', '85%', '15%', '85%'];
+                node.style({
+                    'background-image': bgImages.join(', '),
+                    'background-position-x': bgImages.map((_, i) => positionsX[i % 4]).join(', '),
+                    'background-position-y': bgImages.map((_, i) => positionsY[i % 4]).join(', '),
+                    'background-width': bgImages.map(() => '14px').join(', '),
+                    'background-height': bgImages.map(() => '14px').join(', ')
+                });
+              }
+            });
           }
       }
   }, [selectedNodes, pebbles]);
 
-  return <div ref={cyContainerRef} className='w-[90vw] md:w-[42vw] max-w-[550px] h-[50vh] md:h-[55vh] min-h-[350px] border-2 border-gray-300 bg-white rounded-xl shadow-lg relative text-left' />;
+  return <div ref={cyContainerRef} className='w-[90vw] md:w-[42vw] max-w-[550px] h-[40vh] md:h-[45vh] min-h-[280px] border-2 border-gray-300 bg-white rounded-xl shadow-lg relative text-left' />;
 }

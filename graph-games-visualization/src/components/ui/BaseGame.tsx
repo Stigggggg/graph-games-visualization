@@ -19,7 +19,7 @@ export function BaseGame ({ title, dashboard, status, controls, g1Title, g1Graph
     const navigate = useNavigate();
 
     return (
-        <div className="flex flex-col items-center gap-4 mt-6 p-4 min-h-screen">
+        <div className="flex flex-col items-center gap-4 py-4 px-2 h-screen overflow-hidden box-border">
             <Subtitle className="text-4xl">{title}</Subtitle>
 
             <div className='flex flex-col items-center bg-white py-6 px-8 rounded-2xl w-full max-w-4xl shadow-md border-t-4 border-blue-500'>

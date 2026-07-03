@@ -24,7 +24,7 @@ function EFMenu() {
     };
 
     return (
-        <BaseMenu title="EF Settings" onStart={handleStart}>
+        <BaseMenu title="Pebbles Settings" onStart={handleStart}>
             <Label>
                 Number of pebbles (k):
                 <Input
