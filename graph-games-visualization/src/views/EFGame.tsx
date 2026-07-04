@@ -6,6 +6,11 @@ import { Subtitle } from "../components/ui/Titles";
 import { BaseGame } from "../components/ui/BaseGame";
 import { EFMove } from "../services/gameSession";
 
+type NodeDetail = {
+    player: string;
+    round: number;
+}
+
 // EF game component, rendering the board and presenting its state
 function EFGame() {
     const navigate = useNavigate();
@@ -21,6 +26,8 @@ function EFGame() {
     const [winner, setWinner] = useState<string | null>(null);
     const [reason, setReason] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const [detailsG1, setDetailsG1] = useState<Record<string, NodeDetail>>({});
+    const [detailsG2, setDetailsG2] = useState<Record<string, NodeDetail>>({});
 
     if (!state) {
         return (
@@ -56,7 +63,7 @@ function EFGame() {
 
     const getMessage = () => {
         if (turn === "spoiler") {
-            return "Spoiler: choose a starting node in either G1 or G2";
+            return "Spoiler 😈: choose a starting node in either G1 or G2";
         }
 
         let target = "G1"
@@ -64,7 +71,7 @@ function EFGame() {
             target = "G2";
         }
 
-        return `Duplicator: choose a matching node in ${target}`;
+        return `Duplicator 👼: choose a matching node in ${target}`;
     }
 
     const move = async (graphId: string, nodeId: string) => {
@@ -81,8 +88,38 @@ function EFGame() {
                 return false;
             }
             
-            setMovesG1(data.moves_g1 || []);
-            setMovesG2(data.moves_g2 || []);
+            const nextDetailsG1 = {...detailsG1};
+            const nextDetailsG2 = {...detailsG2};
+            if (graphId === "g1") {
+                nextDetailsG1[nodeId] = {
+                    player: turn, round
+                };
+            } else {
+                nextDetailsG2[nodeId] = {
+                    player: turn, round
+                };
+            }
+
+            const serverMovesG1 = data.moves_g1 || [];
+            const serverMovesG2 = data.moves_g2 || [];
+            serverMovesG1.forEach((n: string) => {
+                if (!nextDetailsG1[n]) {
+                    nextDetailsG1[n] = {
+                        player: turn === "spoiler" ? "duplicator" : "spoiler", round
+                    };
+                }
+            });
+            serverMovesG2.forEach((n: string) => {
+                if (!nextDetailsG2[n]) {
+                    nextDetailsG2[n] = {
+                        player: turn === "spoiler" ? "duplicator" : "spoiler", round
+                    };
+                }
+            });
+            setDetailsG1(nextDetailsG1);
+            setDetailsG2(nextDetailsG2);
+            setMovesG1(serverMovesG1);
+            setMovesG2(serverMovesG2);
             setServerMessage(data.message || "");
 
             if (data.status === "game_over") {
@@ -119,9 +156,10 @@ function EFGame() {
                     Round: <span className="text-blue-600">{round} / {state.maxRounds}</span>
                 </div>
                 {status === "playing" && (
-                    <div className="text-lg font-bold text-gray-700">
-                        Turn: <span className={turn === "spoiler" ? "text-red-500" : "text-green-600"}>
-                            {turn.toUpperCase()}
+                    <div className="flex items-center gap-2 text-lg font-bold text-gray-700">
+                        Turn: 
+                        <span className={`flex items-center gap-1 ${turn === "spoiler" ? "text-red-500" : "text-blue-500"}`}>
+                            {turn === "spoiler" ? " 😈 SPOILER" : "👼 DUPLICATOR"}
                         </span>
                     </div>
                 )}
@@ -135,7 +173,8 @@ function EFGame() {
             ) : (
                 <div className="flex flex-col gap-3 items-center">
                     <div className={`text-2xl font-black uppercase tracking-wide ${winner?.includes("spoiler") ? "text-red-500" : "text-green-600"}`}>
-                        WINNER: {winner}
+                       {winner?.includes("spoiler") ? "😈" : "👼"}
+                       WINNER: {winner}
                     </div>
                     <div className="bg-gray-100 border border-gray-300 text-gray-800 px-6 py-2 rounded-lg text-center font-medium w-full md:w-3/4">
                         Reason: {reason}
@@ -159,8 +198,8 @@ function EFGame() {
             menuRoute="/ef-menu"
             g1Title={getTitle('g1')}
             g2Title={getTitle('g2')}
-            g1Graph={<Graph data={state.g1} color='#4a90e2' selectedNodes={movesG1} nodeClick={(id) => move('g1', id)} />}
-            g2Graph={<Graph data={state.g2} color='#e24a4a' selectedNodes={movesG2} nodeClick={(id) => move('g2', id)} />}
+            g1Graph={<Graph data={state.g1} color='#4a90e2' selectedNodes={movesG1} nodeClick={(id) => move('g1', id)} nodeDetails={detailsG1} />}
+            g2Graph={<Graph data={state.g2} color='#e24a4a' selectedNodes={movesG2} nodeClick={(id) => move('g2', id)} nodeDetails={detailsG2} />}
         />
     );
 
