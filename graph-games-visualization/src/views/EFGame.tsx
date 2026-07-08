@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { Graph } from "../components/graphs/Graph";
 import { Button } from "../components/ui/Button";
 import { Subtitle } from "../components/ui/Titles";
-import { BaseGame } from "../components/ui/BaseGame";
+import { BaseGame, type HistoryEntry } from "../components/ui/BaseGame";
 import { EFMove } from "../services/gameSession";
 
 type NodeDetail = {
@@ -28,6 +28,12 @@ function EFGame() {
     const [error, setError] = useState<string | null>(null);
     const [detailsG1, setDetailsG1] = useState<Record<string, NodeDetail>>({});
     const [detailsG2, setDetailsG2] = useState<Record<string, NodeDetail>>({});
+    const [history, setHistory] = useState<HistoryEntry[]>([{
+            id: 1,
+            text: "Game generated! Waiting for the first move...",
+            type: "system"
+        }
+    ]);
 
     if (!state) {
         return (
@@ -80,11 +86,25 @@ function EFGame() {
         }
         setError(null);
 
+        const playerEmoji = turn === "spoiler" ? "😈" : "👼";
+        const playerName = turn === "spoiler" ? "Spoiler" : "Duplicator";
+        const actionText = `Round ${round}: ${playerEmoji} ${playerName} selected node ${nodeId} in ${graphId.toUpperCase()}`;
+        setHistory(prev => [...prev, {
+            id: Date.now(),
+            text: actionText,
+            type: turn as "spoiler" | "duplicator"
+        }]);
+
         try {
             const data = await EFMove(state.game_id, graphId, nodeId);
             
             if (data.error) { 
                 setError(data.error);
+                setHistory(prev => [...prev, {
+                    id: Date.now() + 1,
+                    text: `⚠️ ${data.error}`,
+                    type: "error"
+                }]);
                 return false;
             }
             
@@ -122,6 +142,16 @@ function EFGame() {
             setMovesG2(serverMovesG2);
             setServerMessage(data.message || "");
 
+            if (data.message) {
+                const isWin = data.status === "game_over" && data.winner?.includes("Duplicator");
+                const isLoss = data.status === "game_over" && data.winner?.includes("Spoiler");
+                setHistory(prev => [...prev, {
+                    id: Date.now() + 2,
+                    text: `Server: ${data.message}`,
+                    type: isWin ? "success" : (isLoss ? "error" : "system")
+                }]);
+            }
+
             if (data.status === "game_over") {
                 setStatus('game_over');
                 setWinner(data.winner);
@@ -145,6 +175,11 @@ function EFGame() {
             return true;
         } catch (e: any) {
             setError(e.message || "Invalid move or server error!")
+            setHistory(prev => [...prev, {
+                id: Date.now() + 3,
+                text: `⚠️ Error: ${e.message}`,
+                type: "error"
+            }]);
             return false;
         }
     };
@@ -200,6 +235,7 @@ function EFGame() {
             g2Title={getTitle('g2')}
             g1Graph={<Graph data={state.g1} color='#4a90e2' selectedNodes={movesG1} nodeClick={(id) => move('g1', id)} nodeDetails={detailsG1} />}
             g2Graph={<Graph data={state.g2} color='#e24a4a' selectedNodes={movesG2} nodeClick={(id) => move('g2', id)} nodeDetails={detailsG2} />}
+            history={history}
         />
     );
 
