@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Graph } from "../components/graphs/Graph";
-import { BaseGame } from "../components/ui/BaseGame";
+import { BaseGame, type HistoryEntry } from "../components/ui/BaseGame";
 import { PebbleMove } from "../services/gameSession";
 
 type NodeDetail = {
@@ -26,7 +26,12 @@ function PebblesGame() {
     const [error, setError] = useState<string | null>(null);
     const [detailsG1, setDetailsG1] = useState<Record<string, NodeDetail>>({});
     const [detailsG2, setDetailsG2] = useState<Record<string, NodeDetail>>({});
-
+    const [history, setHistory] = useState<HistoryEntry[]>([{
+       id: 1,
+       text: "Game generated! Waiting for the first move...",
+       type: "system" 
+    }]);
+    
     if (!state) {
         return (
             <div className='flex flex-col items-center gap-4 p-10'>
@@ -78,11 +83,25 @@ function PebblesGame() {
         }
         setError(null);
 
+        const playerEmoji = turn === "spoiler" ? "😈" : "👼";
+        const playerName = turn === "spoiler" ? "Spoiler" : "Duplicator";
+        const actionText = `Round ${round}: ${playerEmoji} ${playerName} placed pebble P${active} on node ${nodeId} in ${graphId.toUpperCase()}`;
+        setHistory(prev => [...prev, {
+            id: Date.now(),
+            text: actionText,
+            type: turn as "spoiler" | "duplicator"
+        }]);
+
         try {
            const data = await PebbleMove(state.game_id, graphId, nodeId, active);
            
            if (data.error) {
                 setError(data.error);
+                setHistory(prev => [...prev, {
+                    id: Date.now() + 1,
+                    text: `⚠️ ${data.error}`,
+                    type: "error"
+                }]);
                 return false;
            }
            
@@ -135,6 +154,16 @@ function PebblesGame() {
            setP2(data.p2 || {});
            setServerMessage(data.message || "");
 
+           if (data.message) {
+                const isWin = data.status === "game_over" && data.winner?.includes("Duplicator");
+                const isLoss = data.status === "game_over" && data.winner?.includes("Spoiler");
+                setHistory(prev => [...prev, {
+                    id: Date.now() + 2,
+                    text: `Server: ${data.message}`,
+                    type: isWin ? "success" : (isLoss ? "error" : "system")
+                }]);
+           }
+
            if (data.status === "game_over") {
                 setStatus("game_over");
                 setWinner(data.winner);
@@ -158,6 +187,11 @@ function PebblesGame() {
            return true;
         } catch (e: any) {
             setError(e.message || "Invalid move or server error!");
+            setHistory(prev => [...prev, {
+                id: Date.now() + 3,
+                text: `⚠️ Error: ${e.message}`,
+                type: "error"
+            }]);
             return false;
         }
     }
@@ -231,6 +265,7 @@ function PebblesGame() {
             g2Title={getTitle('g2')}
             g1Graph={<Graph data={state.g1} color='#4a90e2' pebbles={p1} nodeClick={(id) => move('g1', id)} nodeDetails={detailsG1} />}
             g2Graph={<Graph data={state.g2} color='#e24a4a' pebbles={p2} nodeClick={(id) => move('g2', id)} nodeDetails={detailsG2} />}
+            history={history}
         />
     );
 }
