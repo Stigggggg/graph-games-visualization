@@ -4,13 +4,26 @@ import { BaseMenu } from "../components/ui/BaseMenu";
 import { Label, Input } from "../components/ui/Wrappers";
 import { PebblesGameSession } from "../services/gameSession";
 import { type BaseMenuState } from "../services/gameValidation";
+import { GraphSelector } from "../components/ui/GraphSelector";
+import { generateTemplate, type GraphTemplate } from "../services/graphGenerating";
 
-function EFMenu() {
+function PebblesMenu() {
     const navigate = useNavigate();
     const [pebbles, setPebbles] = useState<number | "">("");
-
+    const [g1Type, setG1Type] = useState<GraphTemplate>("random");
+    const [g2Type, setG2Type] = useState<GraphTemplate>("random");
+    
     const handleStart = async (baseState: BaseMenuState) => {
-        const data = await PebblesGameSession(baseState, pebbles);
+        const n = Number(baseState.vertices) || 5;
+        const m = Number(baseState.edges) || 0;
+        const g1Edges = g1Type !== "random" ? generateTemplate(g1Type, n) : undefined;
+        const g2Edges = g1Type !== "random" ? generateTemplate(g1Type, n) : undefined;
+        const enhancedState = {
+            ...baseState,
+            g1: { type: g1Type, n: n, m: m, edges: g1Edges },
+            g2: { type: g2Type, n: n, m: m, edges: g2Edges },
+        };
+        const data = await PebblesGameSession(enhancedState, pebbles);
         
         navigate("/pebbles", {
             state: {
@@ -25,6 +38,11 @@ function EFMenu() {
 
     return (
         <BaseMenu title="Pebbles Settings" onStart={handleStart}>
+            <div className="flex flex-col sm:flex-row gap-4 mb-4 mt-2 w-full justify-center">
+                <GraphSelector title="Graph 1 type:" value={g1Type} onChange={setG1Type} />
+                <GraphSelector title="Graph 2 type:" value={g2Type} onChange={setG2Type} />
+            </div>
+            
             <Label>
                 Number of pebbles (k):
                 <Input
@@ -39,4 +57,4 @@ function EFMenu() {
     );
 }
 
-export default EFMenu;
+export default PebblesMenu;

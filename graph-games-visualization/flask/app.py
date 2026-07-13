@@ -1,8 +1,9 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import uuid
-from graph_utils import generate_nx_graph, generate_nx_json, parse_to_cytoscape
+from graph_utils import generate_nx_graph, generate_nx_json, parse_to_cytoscape, build_custom_graph
 from game_logic import check_iso, check_iso_pebbles, get_move, get_pebble_move
+import networkx as nx
 
 app = Flask(__name__)
 CORS(app)
@@ -18,17 +19,20 @@ def generate():
 
     # choosing a method for generating graphs based on a game mode received from payload
     if source == 'random':
-        n = int(data.get('n'))
-        m = int(data.get('m'))
-        max_edges = n * n
-        
-        if m > max_edges:
-            return jsonify({
-                'error': f'Error: for {n} maximum number of edges is {max_edges}'
-            }), 400
-        
-        g1 = generate_nx_graph(n, m)
-        g2 = generate_nx_graph(n, m)
+        if 'g1' in data and 'g2' in data:
+            g1 = build_custom_graph(data['g1'])
+            g2 = build_custom_graph(data['g2'])
+        else:
+            n = int(data.get('n'))
+            m = int(data.get('m'))
+            max_edges = n * n
+            if m > max_edges:
+                return jsonify({
+                    'error': f'Error: for {n} maximum number of edges is {max_edges}'
+                }), 400
+            
+            g1 = generate_nx_graph(n, m)
+            g2 = generate_nx_graph(n, m)
     
     elif source == 'file':
         custom_data = data.get('custom')
@@ -82,17 +86,20 @@ def generate_pebbles():
 
    # choosing a method for generating graphs based on a game mode received from payload
     if source == 'random':
-        n = int(data.get('n'))
-        m = int(data.get('m'))
-        max_edges = n * n
-        
-        if m > max_edges:
-            return jsonify({
-                'error': f'Error: for {n} maximum number of edges is {max_edges}'
-            }), 400
-        
-        g1 = generate_nx_graph(n, m)
-        g2 = generate_nx_graph(n, m)
+        if 'g1' in data and 'g2' in data:
+            g1 = build_custom_graph(data['g1'])
+            g2 = build_custom_graph(data['g2'])
+        else:
+            n = int(data.get('n'))
+            m = int(data.get('m'))
+            max_edges = n * n
+            if m > max_edges:
+                return jsonify({
+                    'error': f'Error: for {n} maximum number of edges is {max_edges}'
+                }), 400
+            
+            g1 = generate_nx_graph(n, m)
+            g2 = generate_nx_graph(n, m)
     
     elif source == 'file':
         custom_data = data.get('custom')

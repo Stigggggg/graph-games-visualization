@@ -80,3 +80,24 @@ def parse_to_cytoscape(G):
         })
     
     return elements
+
+def build_custom_graph(data):
+    n = int(data.get('n', 5))
+    edges = data.get('edges')
+
+    if edges is not None:
+        G = nx.Graph()
+        colors = ['a', 'b', 'c']
+        for i in range(n):
+            G.add_node(f"v{i+1}", color=random.choice(colors))
+        for u, v in edges:
+            color = random.choice(colors)
+            G.add_edge(f"v{u+1}", f"v{v+1}", color=color)
+            G.add_edge(f"v{v+1}", f"v{u+1}", color=color)
+        return G
+    else:
+        m = int(data.get('m', 0))
+        max_edges = int(n * n / 2)
+        if m > max_edges:
+            m = max_edges
+        return generate_nx_graph(n, m)
