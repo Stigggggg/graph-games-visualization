@@ -1,0 +1,18 @@
+{
+    "g1": {
+      "nodes": [{"id": "v1"}, {"id": "v2"}, {"id": "v3"}],
+      "edges": [
+        {"source": "v1", "target": "v2"},
+        {"source": "v2", "target": "v3"},
+        {"source": "v3", "target": "v1"}
+      ]
+    },
+    "g2": {
+      "nodes": [{"id": "u1"}, {"id": "u2"}, {"id": "u3"}],
+      "edges": [
+        {"source": "u1", "target": "u2"},
+        {"source": "u2", "target": "u3"},
+        {"source": "u3", "target": "u1"}
+      ]
+    }
+}

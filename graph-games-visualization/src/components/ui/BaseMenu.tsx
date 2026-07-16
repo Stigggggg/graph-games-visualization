@@ -36,6 +36,15 @@ export function BaseMenu({ title, children, onStart }: BaseMenuProps) {
         }
     };
 
+    const downloadSample = () => {
+        const link = document.createElement("a");
+        link.href = "/example.json";
+        link.download = "example.json";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
     return (
         <div className="min-h-screen flex flex-col items-center justify-center gap-4 p-4 box-border bg-gray-50">
            <Subtitle className="text-3xl">{title}</Subtitle>
@@ -77,15 +86,27 @@ export function BaseMenu({ title, children, onStart }: BaseMenuProps) {
                         </Label>
                     </div>
                 )}
+
+                {source === "random" && children}
+
                 {source === "file" && (
-                    <Label>
-                        <Input 
-                            type="file" 
-                            accept=".json"  
-                            onChange={(e) => setFile(e.target.files ? e.target.files[0] : null)}
-                            className="p-0 border-none shadow-none focus:ring-0 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" 
-                        />
-                    </Label>
+                    <div className="flex flex-col gap-2">
+                        <Label>
+                            Upload JSON file:
+                            <Input 
+                                type="file" 
+                                accept=".json"  
+                                onChange={(e) => setFile(e.target.files ? e.target.files[0] : null)}
+                                className="p-0 border-none shadow-none focus:ring-0 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" 
+                            />
+                        </Label>
+                        <Button
+                            onClick={downloadSample}
+                            className="bg-green-600 hover:bg-green-700 text-sm py-1"
+                        >
+                            Download sample JSON:
+                        </Button>
+                    </div>
                 )}
                 {source === "draw" && (
                     <div className="flex flex-col gap-4 w-full">
@@ -105,8 +126,6 @@ export function BaseMenu({ title, children, onStart }: BaseMenuProps) {
                         </div>
                     </div>
                 )}
-
-                {children}
         
                 <Label>
                     Game mode:

@@ -17,7 +17,7 @@ function EFMenu() {
         const n = Number(baseState.vertices) || 5;
         const m = Number(baseState.edges) || 0;
         const g1Edges = g1Type !== "random" ? generateTemplate(g1Type, n) : undefined;
-        const g2Edges = g1Type !== "random" ? generateTemplate(g1Type, n) : undefined;
+        const g2Edges = g1Type !== "random" ? generateTemplate(g2Type, n) : undefined;
         const enhancedState = {
             ...baseState,
             g1: { type: g1Type, n: n, m: m, edges: g1Edges },
