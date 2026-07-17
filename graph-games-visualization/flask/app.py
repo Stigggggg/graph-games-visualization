@@ -350,6 +350,7 @@ def move_pebble():
             'p2': game['pebbles_g2']
         })
 
+# Gemini version just for testing
 @app.route('/analyze-ef', methods=['POST'])
 def analyze_ef():
     data = request.json
@@ -357,35 +358,36 @@ def analyze_ef():
     game = games.get(game_id)
 
     if not game:
-        return jsonify({
-            'error': 'Game not found'
-        }), 400
+        return jsonify({'error': 'Game not found'}), 400
 
     g1 = game['g1']
     g2 = game['g2']
     total_rounds = game['rounds']
-    is_iso = nx.is_isomorphic(g1, g2)
     
-    if is_iso:
-        winning = 'duplicator'
-    else:
-        winning = 'spoiler'
+    # Werdykt matematyczny
+    is_iso = nx.is_isomorphic(g1, g2)
+    winning = 'duplicator' if is_iso else 'spoiler'
     
     moves_g1 = game.get('moves_g1', [])
     moves_g2 = game.get('moves_g2', [])
     rounds_played = min(len(moves_g1), len(moves_g2))
-    history = []
-    sim_game = {
-        'g1': g1,
+    
+    timeline = []
+    
+    ai_sim = {
+        'g1': g1, 
         'g2': g2,
-        'moves_g1': [],
+        'moves_g1': [], 
         'moves_g2': [],
         'mode': 'ai',
         'rounds': total_rounds,
         'current_round': 1,
-        'status': 'in_progress',
-        'spoiler_choice_graph': None
+        'status': 'in progress',
+        'spoiler_choice_graph': None 
     }
+
+    # NOWOŚĆ: Śledzimy, czy AI nie wygrało/przegrało przed czasem
+    ai_survived = True
 
     for i in range(total_rounds):
         round_info = {
@@ -393,30 +395,40 @@ def analyze_ef():
             'played_by_user': i < rounds_played
         }
 
+        ai_sim['current_round'] = i + 1
+
         if i < rounds_played: 
-            round_info['g1_node'] = moves_g1[i]
-            round_info['g2_node'] = moves_g2[i]
-            sim_game['moves_g1'].append(moves_g1[i])
-            sim_game['moves_g2'].append(moves_g2[i])
+            round_info['user_g1'] = moves_g1[i]
+            round_info['user_g2'] = moves_g2[i]
+            
+        # Generujemy ruchy AI TYLKO, jeśli gra w tle nadal trwa
+        if ai_survived:
+            ai_sim['turn'] = 'spoiler'
+            ai_spoiler_node, ai_spoiler_graph = get_move(ai_sim)
+            ai_sim['spoiler_choice_graph'] = ai_spoiler_graph
+            
+            ai_sim['turn'] = 'duplicator'
+            ai_dup_node, ai_dup_graph = get_move(ai_sim)
+            
+            opt_g1 = ai_spoiler_node if ai_spoiler_graph == 'g1' else ai_dup_node
+            opt_g2 = ai_spoiler_node if ai_spoiler_graph == 'g2' else ai_dup_node
+            
+            # SPRAWDZAMY, CZY RUCHY AI ZAKOŃCZYŁY GRĘ (Czy izomorfizm padł)
+            survives, _ = check_iso(g1, g2, ai_sim['moves_g1'], ai_sim['moves_g2'])
+            if not survives:
+                ai_survived = False
         else:
-            sim_game['turn'] = 'spoiler'
-            ai_spoiler_node, ai_spoiler_graph = get_move(sim_game)
-            sim_game['spoiler_choice_graph'] = ai_spoiler_graph
-            if ai_spoiler_graph == 'g1':
-                sim_game['moves_g1'].append(ai_spoiler_node)
-            else:
-                sim_game['moves_g2'].append(ai_spoiler_node)
-            sim_game['turn'] = 'duplicator'
-            ai_duplicator_node, ai_duplicator_graph = get_move(sim_game)
-            if ai_duplicator_graph == 'g1':
-                sim_game['moves_g1'].append(ai_duplicator_node)
-            else:
-                sim_game['moves_g2'].append(ai_duplicator_node)
-            round_info['g1_node'] = sim_game['moves_g1'][-1]
-            round_info['g2_node'] = sim_game['moves_g2'][-1]
-            round_info['is_simulated'] = True
+            opt_g1 = "-"
+            opt_g2 = "-"
         
-        history.append(round_info)
+        round_info['optimal_g1'] = opt_g1
+        round_info['optimal_g2'] = opt_g2
+        
+        timeline.append(round_info)
+
+    # Parsowanie grafów dla widżetu
+    cyto_g1 = parse_to_cytoscape(g1)
+    cyto_g2 = parse_to_cytoscape(g2)
 
     return jsonify({
         'status': 'ok',
@@ -424,8 +436,10 @@ def analyze_ef():
         'winning': winning,
         'rounds_played': rounds_played,
         'total_rounds': game['rounds'],
-        'history': history,
-        'game_status': game['status']
+        'timeline': timeline,
+        'game_status': game['status'],
+        'g1_elements': cyto_g1,
+        'g2_elements': cyto_g2
     })
 
 if __name__ == '__main__':
