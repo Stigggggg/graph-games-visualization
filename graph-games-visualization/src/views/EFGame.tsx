@@ -4,7 +4,8 @@ import { Graph } from "../components/graphs/Graph";
 import { Button } from "../components/ui/Button";
 import { Subtitle } from "../components/ui/Titles";
 import { BaseGame, type HistoryEntry } from "../components/ui/BaseGame";
-import { EFMove } from "../services/gameSession";
+import { EFMove, getEFAnalysis } from "../services/gameSession";
+import { Analysis } from "../components/ui/Analysis";
 
 type NodeDetail = {
     player: string;
@@ -34,6 +35,9 @@ function EFGame() {
             type: "system"
         }
     ]);
+    const [analysisData, setAnalysisData] = useState<any>(null);
+    const [isLoading, setIsLoading] = useState(false);
+    const [analysisError, setAnalysisError] = useState("");
 
     if (!state) {
         return (
@@ -184,6 +188,19 @@ function EFGame() {
         }
     };
 
+    const handleAnalysis = async () => {
+        try {
+            setIsLoading(true);
+            setAnalysisError("");
+            const data = await getEFAnalysis(state.game_id);
+            setAnalysisData(data);
+        } catch (e: any){
+            setAnalysisError(e.message);
+        } finally {
+            setIsLoading(false);
+        }
+    }
+
     const GameDashboard = (
         <div className="w-full flex flex-col gap-4">
             <div className="flex justify-between items-center border-b border-gray-200 pb-3">
@@ -214,6 +231,15 @@ function EFGame() {
                     <div className="bg-gray-100 border border-gray-300 text-gray-800 px-6 py-2 rounded-lg text-center font-medium w-full md:w-3/4">
                         Reason: {reason}
                     </div>
+                    <Button 
+                        onClick={handleAnalysis}
+                        className="bg-purple-600 hover:bg-purple-700 mt-2 w-full md:w-3/4"
+                        disabled={isLoading}
+                    >
+                        {isLoading ? "Analyzing..." : "📊 Post-Game Analysis"}
+                    </Button>
+                    
+                    {analysisError && <div className="text-red-500 font-bold">{analysisError}</div>}
                 </div>
             )}
 
@@ -226,17 +252,23 @@ function EFGame() {
     );
 
     return (
-        <BaseGame
-            title="EF Game"
-            status={status}
-            dashboard={GameDashboard}
-            menuRoute="/ef-menu"
-            g1Title={getTitle('g1')}
-            g2Title={getTitle('g2')}
-            g1Graph={<Graph data={state.g1} color='#4a90e2' selectedNodes={movesG1} nodeClick={(id) => move('g1', id)} nodeDetails={detailsG1} />}
-            g2Graph={<Graph data={state.g2} color='#e24a4a' selectedNodes={movesG2} nodeClick={(id) => move('g2', id)} nodeDetails={detailsG2} />}
-            history={history}
-        />
+        <>
+            <BaseGame
+                title="EF Game"
+                status={status}
+                dashboard={GameDashboard}
+                menuRoute="/ef-menu"
+                g1Title={getTitle('g1')}
+                g2Title={getTitle('g2')}
+                g1Graph={<Graph data={state.g1} color='#4a90e2' selectedNodes={movesG1} nodeClick={(id) => move('g1', id)} nodeDetails={detailsG1} />}
+                g2Graph={<Graph data={state.g2} color='#e24a4a' selectedNodes={movesG2} nodeClick={(id) => move('g2', id)} nodeDetails={detailsG2} />}
+                history={history}
+            />
+            <Analysis 
+                data={analysisData} 
+                onClose={() => setAnalysisData(null)} 
+            /> 
+        </>
     );
 
 }

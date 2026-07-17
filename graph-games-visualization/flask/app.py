@@ -350,5 +350,83 @@ def move_pebble():
             'p2': game['pebbles_g2']
         })
 
+@app.route('/analyze-ef', methods=['POST'])
+def analyze_ef():
+    data = request.json
+    game_id = data.get('game_id')
+    game = games.get(game_id)
+
+    if not game:
+        return jsonify({
+            'error': 'Game not found'
+        }), 400
+
+    g1 = game['g1']
+    g2 = game['g2']
+    total_rounds = game['rounds']
+    is_iso = nx.is_isomorphic(g1, g2)
+    
+    if is_iso:
+        winning = 'duplicator'
+    else:
+        winning = 'spoiler'
+    
+    moves_g1 = game.get('moves_g1', [])
+    moves_g2 = game.get('moves_g2', [])
+    rounds_played = min(len(moves_g1), len(moves_g2))
+    history = []
+    sim_game = {
+        'g1': g1,
+        'g2': g2,
+        'moves_g1': [],
+        'moves_g2': [],
+        'mode': 'ai',
+        'rounds': total_rounds,
+        'current_round': 1,
+        'status': 'in_progress',
+        'spoiler_choice_graph': None
+    }
+
+    for i in range(total_rounds):
+        round_info = {
+            'round': i + 1,
+            'played_by_user': i < rounds_played
+        }
+
+        if i < rounds_played: 
+            round_info['g1_node'] = moves_g1[i]
+            round_info['g2_node'] = moves_g2[i]
+            sim_game['moves_g1'].append(moves_g1[i])
+            sim_game['moves_g2'].append(moves_g2[i])
+        else:
+            sim_game['turn'] = 'spoiler'
+            ai_spoiler_node, ai_spoiler_graph = get_move(sim_game)
+            sim_game['spoiler_choice_graph'] = ai_spoiler_graph
+            if ai_spoiler_graph == 'g1':
+                sim_game['moves_g1'].append(ai_spoiler_node)
+            else:
+                sim_game['moves_g2'].append(ai_spoiler_node)
+            sim_game['turn'] = 'duplicator'
+            ai_duplicator_node, ai_duplicator_graph = get_move(sim_game)
+            if ai_duplicator_graph == 'g1':
+                sim_game['moves_g1'].append(ai_duplicator_node)
+            else:
+                sim_game['moves_g2'].append(ai_duplicator_node)
+            round_info['g1_node'] = sim_game['moves_g1'][-1]
+            round_info['g2_node'] = sim_game['moves_g2'][-1]
+            round_info['is_simulated'] = True
+        
+        history.append(round_info)
+
+    return jsonify({
+        'status': 'ok',
+        'is_isomorphic': is_iso,
+        'winning': winning,
+        'rounds_played': rounds_played,
+        'total_rounds': game['rounds'],
+        'history': history,
+        'game_status': game['status']
+    })
+
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
