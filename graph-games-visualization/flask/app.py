@@ -168,6 +168,12 @@ def move():
             
         if game['mode'] == 'ai':
             ai_node, ai_graph = get_move(game)
+
+            if ai_graph == 'g1':
+                game['moves_g1'].append(ai_node)
+            else:
+                game['moves_g2'].append(ai_node)
+            
             survives, message = check_iso(game['g1'], game['g2'], game['moves_g1'], game['moves_g2'])
             
             if not survives:
@@ -387,36 +393,84 @@ def analyze_ef():
         'spoiler_choice_graph': None
     }
 
+    ai_survived = True
+
     for i in range(total_rounds):
         round_info = {
             'round': i + 1,
             'played_by_user': i < rounds_played
         }
 
+        sim_game['current_round'] = i + 1
+
         if i < rounds_played: 
             round_info['g1_node'] = moves_g1[i]
             round_info['g2_node'] = moves_g2[i]
-            sim_game['moves_g1'].append(moves_g1[i])
-            sim_game['moves_g2'].append(moves_g2[i])
-        else:
+        
+        if ai_survived:
             sim_game['turn'] = 'spoiler'
             ai_spoiler_node, ai_spoiler_graph = get_move(sim_game)
+            
+            if ai_spoiler_node is None or ai_spoiler_graph is None:
+                ai_spoiler_graph = 'g1'
+                possible_moves = []
+                
+                for n in g1.nodes():
+                    if n not in sim_game['moves_g1']:
+                        possible_moves.append(n)
+                
+                if possible_moves:
+                    ai_spoiler_node = possible_moves[0]
+                else:
+                    ai_spoiler_node = list(g1.nodes())[0]
+            
             sim_game['spoiler_choice_graph'] = ai_spoiler_graph
+
             if ai_spoiler_graph == 'g1':
                 sim_game['moves_g1'].append(ai_spoiler_node)
-            else:
+            elif ai_spoiler_graph == 'g2':
                 sim_game['moves_g2'].append(ai_spoiler_node)
+
+            # TODO: ujednolicić
             sim_game['turn'] = 'duplicator'
-            ai_duplicator_node, ai_duplicator_graph = get_move(sim_game)
-            if ai_duplicator_graph == 'g1':
-                sim_game['moves_g1'].append(ai_duplicator_node)
+            ai_dup_node, ai_dup_graph = get_move(sim_game)
+            
+            if ai_dup_node is None or ai_dup_graph is None:
+                ai_dup_graph = 'g2' if ai_spoiler_graph == 'g1' else 'g1'
+                target_g = g2 if ai_dup_graph == 'g2' else g1
+                target_moves = sim_game['moves_g2'] if ai_dup_graph == 'g2' else sim_game['moves_g1']
+                avail = [n for n in target_g.nodes() if n not in target_moves]
+                ai_dup_node = avail[0] if avail else list(target_g.nodes())[0]
+            
+            if ai_dup_graph == 'g1':
+                sim_game['moves_g1'].append(ai_dup_node)
+            elif ai_dup_graph == 'g2':
+                sim_game['moves_g2'].append(ai_dup_node)
+            
+            if ai_spoiler_graph == 'g1':
+                optimal_move_g1 = ai_spoiler_node
             else:
-                sim_game['moves_g2'].append(ai_duplicator_node)
-            round_info['g1_node'] = sim_game['moves_g1'][-1]
-            round_info['g2_node'] = sim_game['moves_g2'][-1]
-            round_info['is_simulated'] = True
+                optimal_move_g1 = ai_dup_node
+            
+            if ai_spoiler_graph == 'g2':
+                optimal_move_g2 = ai_spoiler_node
+            else: 
+                optimal_move_g2 = ai_dup_node
+            
+            survives, _ = check_iso(g1, g2, sim_game['moves_g1'], sim_game['moves_g2'])
+            if not survives:
+                ai_survived = False
         
+        else: 
+            optimal_move_g1 = '-'
+            optimal_move_g2 = '-'
+        
+        round_info['optimal_g1'] = optimal_move_g1
+        round_info['optimal_g2'] = optimal_move_g2
         history.append(round_info)
+    
+    cyto_g1 = parse_to_cytoscape(g1)
+    cyto_g2 = parse_to_cytoscape(g2)
 
     return jsonify({
         'status': 'ok',
@@ -425,7 +479,9 @@ def analyze_ef():
         'rounds_played': rounds_played,
         'total_rounds': game['rounds'],
         'history': history,
-        'game_status': game['status']
+        'game_status': game['status'],
+        'g1_elements': cyto_g1,
+        'g2_elements': cyto_g2
     })
 
 if __name__ == '__main__':
