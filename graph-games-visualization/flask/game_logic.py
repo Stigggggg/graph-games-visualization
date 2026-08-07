@@ -137,12 +137,10 @@ def duplicator_can_win(g1, g2, moves_g1, moves_g2, current_round, max_rounds):
     
     return True
 
-# TODO: poprawić
-# EF game AI agent
 def get_move(game):
     g1 = game['g1']
     g2 = game['g2']
-    round_idx = game['current_round']
+    round = game['current_round']
     max_rounds = game['rounds']
     turn = game.get('turn', 'duplicator')
 
@@ -150,152 +148,235 @@ def get_move(game):
         best_move = None
         best_graph = None
 
-        for s_graph_name in ['g1', 'g2']:
-            s_graph = g1 if s_graph_name == 'g1' else g2
-            s_moves = game['moves_' + s_graph_name]
+        for spoiler_graph_string in ['g1', 'g2']:
+            if spoiler_graph_string == 'g1':
+                spoiler_graph = g1
+            else:
+                spoiler_graph = g2
             
-            for v in s_graph.nodes():
-                # DODANO: OMIJANIE ZUŻYTYCH WĘZŁÓW
-                if v in s_moves: 
+            spoiler_moves = game['moves_' + spoiler_graph_string]
+            
+            for v in spoiler_graph.nodes():
+                if v in spoiler_moves:
                     continue
-                    
+                
                 test1 = list(game['moves_g1'])
                 test2 = list(game['moves_g2'])
-                if s_graph_name == 'g1': test1.append(v)
-                else: test2.append(v)
 
-                dup_can_win = False
-                d_graph_name = 'g2' if s_graph_name == 'g1' else 'g1'
-                d_graph = g2 if d_graph_name == 'g2' else g1
-                d_moves = test1 if d_graph_name == 'g1' else test2
-
-                for dup_node in d_graph.nodes():
-                    # DODANO: OMIJANIE ZUŻYTYCH WĘZŁÓW PRZY PRZEWIDYWANIU RUCHU DUPLIKATORA
-                    if dup_node in d_moves: 
+                if spoiler_graph_string == 'g1':
+                    test1.append(v)
+                else:
+                    test2.append(v)
+                
+                can_duplicator_win = False
+                
+                if spoiler_graph_string == 'g1':
+                    duplicator_graph_string = 'g2'
+                else: 
+                    duplicator_graph_string = 'g1'
+                
+                if duplicator_graph_string == 'g2':
+                    duplicator_graph = g2
+                    duplicator_moves = test2
+                else: 
+                    duplicator_graph = g1
+                    duplicator_moves = test1
+                
+                for duplicator_v in duplicator_graph.nodes():
+                    if duplicator_v in duplicator_moves:
                         continue
-                        
+
                     d_test1 = list(test1)
                     d_test2 = list(test2)
-                    if d_graph_name == 'g1': d_test1.append(dup_node)
-                    else: d_test2.append(dup_node)
 
+                    if duplicator_graph_string == 'g1':
+                        d_test1.append(duplicator_v)
+                    else:
+                        d_test2.append(duplicator_v)
+                    
                     survives, _ = check_iso(g1, g2, d_test1, d_test2)
                     if survives:
-                        if duplicator_can_win(g1, g2, d_test1, d_test2, round_idx, max_rounds):
-                            dup_can_win = True
+                        if duplicator_can_win(g1, g2, d_test1, d_test2, round, max_rounds):
+                            can_duplicator_win = True
                             break
                 
-                if not dup_can_win:
+                if not can_duplicator_win:
                     best_move = v
-                    best_graph = s_graph_name
+                    best_graph = spoiler_graph_string
                     break
             
             if best_move is not None:
                 break
-        
-        # Jeśli Spoiler nie ma ruchu gwarantującego szybką wygraną
+
         if best_move is None:
             best_graph = 'g1'
-            avail = [n for n in g1.nodes() if n not in game['moves_g1']]
-            if not avail:
+            possible = [n for n in g1.nodes() if n not in game['moves_g1']]
+            if not possible:
                 best_graph = 'g2'
-                avail = [n for n in g2.nodes() if n not in game['moves_g2']]
-            best_move = avail[0] if avail else list(g1.nodes())[0]
+                possible = [n for n in g2.nodes() if n not in game['moves_g2']]
+            if possible:
+                best_move = possible[0]
+            else: 
+                best_move = list(g1.nodes())[0]
         
         return best_move, best_graph
 
     else:
-        # LOGIKA DUPLIKATORA
         spoiler_graph = game.get('spoiler_choice_graph', 'g1')
-        ai_graph = 'g2' if spoiler_graph == 'g1' else 'g1'
+        if spoiler_graph == 'g1':
+            ai_graph = 'g2'
+        else:
+            ai_graph = 'g1'
         ai_moves = game['moves_' + ai_graph]
         valid_moves = []
         best_move = None
 
         for v in game[ai_graph].nodes():
-            # DODANO: OMIJANIE ZUŻYTYCH WĘZŁÓW
-            if v in ai_moves: 
+            if v in ai_moves:
                 continue
-                
+            
             test1 = list(game['moves_g1'])
             test2 = list(game['moves_g2'])
-            if ai_graph == 'g1': test1.append(v)
-            else: test2.append(v)
+            
+            if ai_graph == 'g1':
+                test1.append(v)
+            else:
+                test2.append(v)
             
             survives, _ = check_iso(g1, g2, test1, test2)
-            
+
             if survives:
                 valid_moves.append(v)
-                if duplicator_can_win(g1, g2, test1, test2, round_idx, max_rounds):
+                if duplicator_can_win(g1, g2, test1, test2, round, max_rounds):
                     best_move = v
                     break
         
         if best_move is None:
             if valid_moves:
-                last_spoiler = game['moves_g1'][-1] if spoiler_graph == 'g1' else game['moves_g2'][-1]
-                target_degree = game[spoiler_graph].degree[last_spoiler]
+                if spoiler_graph == 'g1':
+                    last_move = game['moves_g1'][-1]
+                else:
+                    last_move = game['moves_g2'][-1]
+            
+                target_degree = game[spoiler_graph].degree[last_move]
                 best_move = min(valid_moves, key=lambda n: abs(game[ai_graph].degree[n] - target_degree))
             else:
-                # DODANO: REZERWA (Skazany na pożarcie Duplikator próbuje utrzymać chociaż ten sam kolor!)
-                avail = [n for n in game[ai_graph].nodes() if n not in ai_moves]
-                
-                # Zabezpieczenie przed błędem, gdy moves_g1/g2 jest puste
+                possible = [n for n in game[ai_graph].nodes() if n not in ai_moves]
                 if game['moves_g1'] and game['moves_g2']:
-                    last_spoiler = game['moves_g1'][-1] if spoiler_graph == 'g1' else game['moves_g2'][-1]
-                    spoiler_color = game[spoiler_graph].nodes[last_spoiler]['color']
-                    same_color = [n for n in avail if game[ai_graph].nodes[n]['color'] == spoiler_color]
-                    best_move = same_color[0] if same_color else (avail[0] if avail else list(game[ai_graph].nodes())[0])
-                else:
-                    best_move = avail[0] if avail else list(game[ai_graph].nodes())[0]
+                    if spoiler_graph == 'g1':
+                        last_move = game['moves_g1'][-1]
+                    else:
+                        last_move = game['moves_g2'][-1]
+                    spoiler_color = game[spoiler_graph].nodes[last_move]['color']
+                    same_color = [n for n in possible if game[ai_graph].nodes[n]['color'] == spoiler_color]
+                    if same_color:
+                        best_move = same_color[0]
+                    else:
+                        if possible:
+                            best_move = possible[0]
+                        else: 
+                            best_move = list(game[ai_graph].nodes())[0]
 
-        # USUNIĘTO: Zapis do game['moves_g1'].append() - teraz robi to app.py
         return best_move, ai_graph
-
-
+                    
 # pebbles AI agent
 def get_pebble_move(game):
-    # pulling state from game object
     g1 = game['g1'] 
     g2 = game['g2']
     p1 = game['pebbles_g1']
     p2 = game['pebbles_g2']
-    active_pebble = game['current_pebble']
-    spoiler_graph = game['spoiler_choice_graph']
-    # choosing which graph will AI play in current turn
+    turn = game.get('turn', 'duplicator')
     
-    if spoiler_graph == 'g1':
-        ai_graph = 'g2'
-    else:
-        ai_graph = 'g1'
-    
-    valid_moves = []
-    best_move = None
+    if turn == 'spoiler':
+        best_node = None
+        best_graph = None
+        best_pebble = None
+        k = game.get('k', 3)
+        pebbles = [str(i) for i in range(1, k + 1)]
+        
+        # Spoiler testuje każdy kamyk i każdy węzeł, szukając szybkiej wygranej
+        for s_graph_name in ['g1', 'g2']:
+            s_graph = g1 if s_graph_name == 'g1' else g2
+            for pebble_id in pebbles:
+                for v in s_graph.nodes():
+                    test_p1 = dict(p1) 
+                    test_p2 = dict(p2)
+                    
+                    if s_graph_name == 'g1': test_p1[pebble_id] = v
+                    else: test_p2[pebble_id] = v
+                    
+                    dup_can_survive = False
+                    d_graph_name = 'g2' if s_graph_name == 'g1' else 'g1'
+                    d_graph = g2 if d_graph_name == 'g2' else g1
+                    
+                    for dup_node in d_graph.nodes():
+                        d_test_p1 = dict(test_p1)
+                        d_test_p2 = dict(test_p2)
+                        if d_graph_name == 'g1': d_test_p1[pebble_id] = dup_node
+                        else: d_test_p2[pebble_id] = dup_node
+                        
+                        survives, _ = check_iso_pebbles(g1, g2, d_test_p1, d_test_p2)
+                        if survives:
+                            dup_can_survive = True
+                            break
+                    
+                    if not dup_can_survive:
+                        best_node = v
+                        best_graph = s_graph_name
+                        best_pebble = pebble_id
+                        break
+                if best_node is not None: break
+            if best_node is not None: break
+        
+        # Jeśli Spoiler nie ma ruchu gwarantującego szybką wygraną (losowy wybór)
+        if best_node is None:
+            best_graph = 'g1'
+            best_pebble = str(random.randint(1, k))
+            best_node = random.choice(list(g1.nodes()))
 
-    # greedy approach to survive the current round
-    for v in game[ai_graph].nodes():
-        test_p1 = dict(p1) 
-        test_p2 = dict(p2)
+        game['spoiler_choice_graph'] = best_graph
+        game['current_pebble'] = best_pebble
         
-        if ai_graph == 'g1': 
-            test_p1[active_pebble] = v
-        else: 
-            test_p2[active_pebble] = v
+        if best_graph == 'g1': game['pebbles_g1'][best_pebble] = best_node
+        else: game['pebbles_g2'][best_pebble] = best_node
         
-        survives, _ = check_iso_pebbles(g1, g2, test_p1, test_p2)
-        
-        if survives:
-            valid_moves.append(v)
-    
-    # randomly choosing best move from valid list 
-    if valid_moves:
-        best_move = random.choice(valid_moves)
+        return best_node, best_graph
+
     else:
-        best_move = random.choice(list(game[ai_graph].nodes()))
+        # LOGIKA DUPLIKATORA
+        active_pebble = game['current_pebble']
+        spoiler_graph = game['spoiler_choice_graph']
+        ai_graph = 'g2' if spoiler_graph == 'g1' else 'g1'
+        
+        valid_moves = []
+        best_move = None
+        
+        for v in game[ai_graph].nodes():
+            test_p1 = dict(p1) 
+            test_p2 = dict(p2)
+            
+            if ai_graph == 'g1': test_p1[active_pebble] = v
+            else: test_p2[active_pebble] = v
+            
+            survives, _ = check_iso_pebbles(g1, g2, test_p1, test_p2)
+            if survives:
+                valid_moves.append(v)
+        
+        if valid_moves:
+            last_spoiler = game['pebbles_g1'][active_pebble] if spoiler_graph == 'g1' else game['pebbles_g2'][active_pebble]
+            target_degree = game[spoiler_graph].degree[last_spoiler]
+            best_move = min(valid_moves, key=lambda n: abs(game[ai_graph].degree[n] - target_degree))
+        else:
+            # Desperacja - próba ratowania twarzy tym samym kolorem
+            last_spoiler = game['pebbles_g1'][active_pebble] if spoiler_graph == 'g1' else game['pebbles_g2'][active_pebble]
+            spoiler_color = game[spoiler_graph].nodes[last_spoiler]['color']
+            same_color = [n for n in game[ai_graph].nodes() if game[ai_graph].nodes[n]['color'] == spoiler_color]
+            best_move = same_color[0] if same_color else random.choice(list(game[ai_graph].nodes()))
+        
+        if ai_graph == 'g1': game['pebbles_g1'][active_pebble] = best_move
+        else: game['pebbles_g2'][active_pebble] = best_move
+        
+        return best_move, ai_graph
+
     
-    # adding that as a move to pebbles dictionary
-    if ai_graph == 'g1':
-        game['pebbles_g1'][active_pebble] = best_move
-    else: 
-        game['pebbles_g2'][active_pebble] = best_move
     
-    return best_move, ai_graph

@@ -11,7 +11,6 @@ export function Analysis({ data, onClose }: AnalysisProps) {
         return null;
     }
 
-
     return (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex justify-center items-center z-50 p-4 md:p-8">
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-7xl h-full max-h-[90vh] flex flex-col md:flex-row overflow-hidden">

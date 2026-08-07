@@ -134,7 +134,8 @@ def generate_pebbles():
         'turn': 'spoiler',
         'status': 'in progress',
         'mode': mode,
-        'current_pebble': None
+        'current_pebble': None,
+        'history': []
     }
 
     return jsonify({
@@ -287,7 +288,12 @@ def move_pebble():
         if game['mode'] == 'ai':
             ai_node, ai_graph = get_pebble_move(game)
             survives, message = check_iso_pebbles(game['g1'], game['g2'], game['pebbles_g1'], game['pebbles_g2'])
-            
+            game['history'].append({
+                'pebble_id': pebble_id,
+                'g1_node': game['pebbles_g1'].get(pebble_id),
+                'g2_node': game['pebbles_g2'].get(pebble_id)
+            })
+
             if not survives:
                 game['status'] = 'spoiler_wins'
                 return jsonify({
@@ -338,6 +344,15 @@ def move_pebble():
     
         survives, message = check_iso_pebbles(game['g1'], game['g2'], game['pebbles_g1'], game['pebbles_g2'])
         
+        if 'history' not in game: 
+            game['history'] = []
+        
+        game['history'].append({
+            'pebble_id': pebble_id,
+            'g1_node': game['pebbles_g1'].get(pebble_id),
+            'g2_node': game['pebbles_g2'].get(pebble_id)
+        })
+
         if not survives:
             game['status'] = 'spoiler_wins'
             return jsonify({
@@ -478,6 +493,94 @@ def analyze_ef():
         'winning': winning,
         'rounds_played': rounds_played,
         'total_rounds': game['rounds'],
+        'history': history,
+        'game_status': game['status'],
+        'g1_elements': cyto_g1,
+        'g2_elements': cyto_g2
+    })
+
+@app.route('/analyze-pebbles', methods=['POST'])
+def analyze_pebbles():
+    data = request.json
+    game_id = data.get('game_id')
+    game = games.get(game_id)
+
+    if not game:
+        return jsonify({'error': 'Game not found'}), 400
+
+    g1 = game['g1']
+    g2 = game['g2']
+    k = game.get('k', 3)
+    
+    is_iso = nx.is_isomorphic(g1, g2)
+    winning = 'duplicator' if is_iso else 'spoiler'
+    
+    user_history = game.get('history', [])
+    rounds_played = len(user_history)
+    
+    # Symulujemy tyle rund ile zagrał gracz + 1, lub max K+1 rund (aby pokazać coś logicznego)
+    total_rounds = max(rounds_played, k + 1)
+    if game['status'] in ['spoiler_wins', 'duplicator_won']:
+        total_rounds = rounds_played # Odcięcie pętli po szybkim macie
+        
+    history = []
+    
+    sim_game = {
+        'g1': g1, 'g2': g2, 'k': k,
+        'pebbles_g1': {}, 'pebbles_g2': {},
+        'mode': 'ai', 'status': 'in progress',
+        'current_pebble': None, 'spoiler_choice_graph': None
+    }
+
+    ai_survived = True
+
+    for i in range(total_rounds):
+        round_info = {
+            'round': i + 1,
+            'played_by_user': i < rounds_played
+        }
+
+        # 1. Zapis ruchów gracza
+        if i < rounds_played: 
+            user_move = user_history[i]
+            # Sprytny format dla frontend'u, np. "v1 (P2)"
+            round_info['g1_node'] = f"{user_move['g1_node']} (P{user_move['pebble_id']})"
+            round_info['g2_node'] = f"{user_move['g2_node']} (P{user_move['pebble_id']})"
+        
+        # 2. Ruchy sztucznej inteligencji
+        if ai_survived:
+            sim_game['turn'] = 'spoiler'
+            ai_spoiler_node, ai_spoiler_graph = get_pebble_move(sim_game)
+            
+            sim_game['turn'] = 'duplicator'
+            ai_dup_node, ai_dup_graph = get_pebble_move(sim_game)
+            
+            p_used = sim_game['current_pebble']
+            opt_g1 = ai_spoiler_node if ai_spoiler_graph == 'g1' else ai_dup_node
+            opt_g2 = ai_spoiler_node if ai_spoiler_graph == 'g2' else ai_dup_node
+            
+            # Format dla AI
+            round_info['optimal_g1'] = f"{opt_g1} (P{p_used})"
+            round_info['optimal_g2'] = f"{opt_g2} (P{p_used})"
+            
+            survives, _ = check_iso_pebbles(g1, g2, sim_game['pebbles_g1'], sim_game['pebbles_g2'])
+            if not survives:
+                ai_survived = False
+        else:
+            round_info['optimal_g1'] = '-'
+            round_info['optimal_g2'] = '-'
+            
+        history.append(round_info)
+
+    cyto_g1 = parse_to_cytoscape(g1)
+    cyto_g2 = parse_to_cytoscape(g2)
+
+    return jsonify({
+        'status': 'ok',
+        'is_isomorphic': is_iso,
+        'winning': winning,
+        'rounds_played': rounds_played,
+        'total_rounds': total_rounds,
         'history': history,
         'game_status': game['status'],
         'g1_elements': cyto_g1,

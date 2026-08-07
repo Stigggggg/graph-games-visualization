@@ -122,7 +122,25 @@ export const getEFAnalysis = async (gameId: string) => {
         headers: {
             "Content-Type": "application/json"
         },
-        body: JSON.stringify({ game_id: gameId})
+        body: JSON.stringify({ game_id: gameId })
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+        throw new Error(data.error || "Server error during analysis");
+    }
+
+    return data;
+}
+
+export const getPebblesAnalysis = async (gameId: string) => {
+    const url = import.meta.env.VITE_API_URL || "http://127.0.0.1:5000";
+    const response = await fetch(`${url}/analyze-pebbles`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ game_id: gameId })
     });
 
     const data = await response.json();
