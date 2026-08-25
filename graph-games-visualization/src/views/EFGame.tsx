@@ -7,12 +7,14 @@ import { BaseGame, type HistoryEntry } from "../components/ui/BaseGame";
 import { EFMove, getEFAnalysis } from "../services/gameSession";
 import { Analysis } from "../components/ui/Analysis";
 
+// node metadata, which player took the node and in which round
 type NodeDetail = {
     player: string;
     round: number;
 }
 
 // EF game component, rendering the board and presenting its state
+// PebblesGame has similar structure
 function EFGame() {
     const navigate = useNavigate();
     const location = useLocation();
@@ -23,18 +25,22 @@ function EFGame() {
     const [turn, setTurn] = useState('spoiler');
     const [movesG1, setMovesG1] = useState<string[]>([]);
     const [movesG2, setMovesG2] = useState<string[]>([]);
+    // which graph is played by Spoiler and which by Duplicator
     const [playerGraph, setPlayerGraph] = useState<string | null>(null);
     const [winner, setWinner] = useState<string | null>(null);
     const [reason, setReason] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
+    // colors and labels
     const [detailsG1, setDetailsG1] = useState<Record<string, NodeDetail>>({});
     const [detailsG2, setDetailsG2] = useState<Record<string, NodeDetail>>({});
+    // history array
     const [history, setHistory] = useState<HistoryEntry[]>([{
             id: 1,
             text: "Game generated! Waiting for the first move...",
             type: "system"
         }
     ]);
+    // states for post-match analysis
     const [analysisData, setAnalysisData] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [analysisError, setAnalysisError] = useState("");
@@ -43,8 +49,8 @@ function EFGame() {
         return (
             <div className='flex flex-col items-center gap-4 p-10'>
                 <Subtitle className="text-red-500">No game generated!</Subtitle>
-                <Button 
-                    onClick={() => navigate('/ef-menu')} 
+                <Button
+                    onClick={() => navigate('/ef-menu')}
                     className="w-auto"
                 >
                     Back to settings
@@ -53,9 +59,10 @@ function EFGame() {
         );
     }
 
+    // graph titles with reminder, who is playing on which graph
     const getTitle = (graphId: string) => {
         const title = graphId.toUpperCase();
-        
+
         if (status === "game_over") {
             return title;
         }
@@ -71,6 +78,7 @@ function EFGame() {
         return title;
     };
 
+    // instructions for the player
     const getMessage = () => {
         if (turn === "spoiler") {
             return "Spoiler 😈: choose a starting node in either G1 or G2";
@@ -84,12 +92,14 @@ function EFGame() {
         return `Duplicator 👼: choose a matching node in ${target}`;
     }
 
+    // move logic, most important part
     const move = async (graphId: string, nodeId: string) => {
         if (status === "game_over") {
             return false;
         }
         setError(null);
 
+        // adding the move to history
         const playerEmoji = turn === "spoiler" ? "😈" : "👼";
         const playerName = turn === "spoiler" ? "Spoiler" : "Duplicator";
         const actionText = `Round ${round}: ${playerEmoji} ${playerName} selected node ${nodeId} in ${graphId.toUpperCase()}`;
@@ -99,10 +109,11 @@ function EFGame() {
             type: turn as "spoiler" | "duplicator"
         }]);
 
+        // sending move attempt to backend
         try {
             const data = await EFMove(state.game_id, graphId, nodeId);
-            
-            if (data.error) { 
+
+            if (data.error) {
                 setError(data.error);
                 setHistory(prev => [...prev, {
                     id: Date.now() + 1,
@@ -111,7 +122,8 @@ function EFGame() {
                 }]);
                 return false;
             }
-            
+
+            // metadata update, who took which vertice
             const nextDetailsG1 = {...detailsG1};
             const nextDetailsG2 = {...detailsG2};
             if (graphId === "g1") {
@@ -124,6 +136,8 @@ function EFGame() {
                 };
             }
 
+            // game status from server, players' moves lists
+            // simulating potential AI moves
             const serverMovesG1 = data.moves_g1 || [];
             const serverMovesG2 = data.moves_g2 || [];
             serverMovesG1.forEach((n: string) => {
@@ -140,12 +154,14 @@ function EFGame() {
                     };
                 }
             });
+            // adding updated data to React state
             setDetailsG1(nextDetailsG1);
             setDetailsG2(nextDetailsG2);
             setMovesG1(serverMovesG1);
             setMovesG2(serverMovesG2);
             setServerMessage(data.message || "");
 
+            // adding server messages to history
             if (data.message) {
                 const isWin = data.status === "game_over" && data.winner?.includes("Duplicator");
                 const isLoss = data.status === "game_over" && data.winner?.includes("Spoiler");
@@ -188,6 +204,7 @@ function EFGame() {
         }
     };
 
+    // downloads analysis object
     const handleAnalysis = async () => {
         try {
             setIsLoading(true);
@@ -201,6 +218,7 @@ function EFGame() {
         }
     }
 
+    // dashboard, which appears above graph containers, contains game info
     const GameDashboard = (
         <div className="w-full flex flex-col gap-4">
             <div className="flex justify-between items-center border-b border-gray-200 pb-3">
@@ -209,7 +227,7 @@ function EFGame() {
                 </div>
                 {status === "playing" && (
                     <div className="flex items-center gap-2 text-lg font-bold text-gray-700">
-                        Turn: 
+                        Turn:
                         <span className={`flex items-center gap-1 ${turn === "spoiler" ? "text-red-500" : "text-blue-500"}`}>
                             {turn === "spoiler" ? " 😈 SPOILER" : "👼 DUPLICATOR"}
                         </span>
@@ -231,14 +249,14 @@ function EFGame() {
                     <div className="bg-gray-100 border border-gray-300 text-gray-800 px-6 py-2 rounded-lg text-center font-medium w-full md:w-3/4">
                         Reason: {reason}
                     </div>
-                    <Button 
+                    <Button
                         onClick={handleAnalysis}
                         className="bg-purple-600 hover:bg-purple-700 mt-2 w-full md:w-3/4"
                         disabled={isLoading}
                     >
                         {isLoading ? "Analyzing..." : "📊 Post-Game Analysis"}
                     </Button>
-                    
+
                     {analysisError && <div className="text-red-500 font-bold">{analysisError}</div>}
                 </div>
             )}
@@ -264,10 +282,10 @@ function EFGame() {
                 g2Graph={<Graph data={state.g2} color='#e24a4a' selectedNodes={movesG2} nodeClick={(id) => move('g2', id)} nodeDetails={detailsG2} />}
                 history={history}
             />
-            <Analysis 
-                data={analysisData} 
-                onClose={() => setAnalysisData(null)} 
-            /> 
+            <Analysis
+                data={analysisData}
+                onClose={() => setAnalysisData(null)}
+            />
         </>
     );
 

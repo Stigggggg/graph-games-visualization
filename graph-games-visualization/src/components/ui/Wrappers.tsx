@@ -1,6 +1,9 @@
 import React from "react";
 
-// base interfaces extending native form elements for seamless React integration
+// Wrappers for labels, input fields and selection lists
+// All of them have the same structure, they are atomic components
+// In addition, all of them inherit standard properties from HTML labels, inputs and select
+
 export interface LabelProps extends React.LabelHTMLAttributes<HTMLLabelElement> {}
 
 export function Label({ children, className="", ...props }: LabelProps) {

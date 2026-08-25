@@ -1,8 +1,10 @@
 import React from "react";
 
-// extends standard HTML button to preserve native DOM behavior
+// By extending React.ButtonHTMLAttributes, the interface automatically inherits
+// all standard HTML button properties
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {}
 
+// ...props in parameters gathers all properties that were not given explicitly
 export function Button({ children, onClick, className="", disabled, ...props}: ButtonProps) {
     return (
         <button

@@ -2,6 +2,8 @@ import { type BaseMenuState, validateRandom, validateFile, validateDraw } from "
 
 type EnhancedState = BaseMenuState & { g1?: any, g2?: any };
 
+// adjusting game settings based on chosen source
+// also choosing the proper validation
 export const buildSettings = async (state: EnhancedState) => {
     let settings: any = {
         mode: state.mode,
@@ -9,7 +11,7 @@ export const buildSettings = async (state: EnhancedState) => {
     };
 
     if (state.source === "random") {
-        if (state.g1 && state.g2) {
+        if (state.g1 && state.g2) { // if templates are given
             settings.g1 = state.g1;
             settings.g2 = state.g2;
         } else {
@@ -24,14 +26,16 @@ export const buildSettings = async (state: EnhancedState) => {
     return settings;
 };
 
+// creating EF game session
 export const EFGameSession = async (state: EnhancedState, rounds: number) => {
     const settings = await buildSettings(state);
     settings.rounds = rounds;
 
+    // env variable for API_URL for production, localhost for local playing
     const apiURL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000'
     const response = await fetch(`${apiURL}/generate-ef`, {
         method: "POST",
-        headers: { 
+        headers: {
             "Content-Type": "application/json"
         },
         body: JSON.stringify(settings)
@@ -45,6 +49,7 @@ export const EFGameSession = async (state: EnhancedState, rounds: number) => {
     return data;
 }
 
+// similar creating Pebbles session
 export const PebblesGameSession = async (state: EnhancedState, pebbles: number | "") => {
     if (pebbles === "" || pebbles < 2 || pebbles > 4) {
         throw new Error("Number of pebbles must be between 2 and 4!");
@@ -56,7 +61,7 @@ export const PebblesGameSession = async (state: EnhancedState, pebbles: number |
     const apiURL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000'
     const response = await fetch(`${apiURL}/generate-pebbles`, {
         method: "POST",
-        headers: { 
+        headers: {
             "Content-Type": "application/json"
         },
         body: JSON.stringify(settings)
@@ -70,6 +75,8 @@ export const PebblesGameSession = async (state: EnhancedState, pebbles: number |
     return data;
 }
 
+// the move and analysis functions behave in the same way as above
+
 export const EFMove = async (gameId: string, graphId: string, nodeId: string) => {
     const url = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000';
     const response = await fetch(`${url}/move`, {
@@ -77,10 +84,10 @@ export const EFMove = async (gameId: string, graphId: string, nodeId: string) =>
         headers: {
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ 
-            game_id: gameId, 
-            graph_id: graphId, 
-            node_id: nodeId 
+        body: JSON.stringify({
+            game_id: gameId,
+            graph_id: graphId,
+            node_id: nodeId
         })
     });
 
@@ -99,9 +106,9 @@ export const PebbleMove = async (gameId: string, graphId: string, nodeId: string
         headers: {
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ 
-            game_id: gameId, 
-            graph_id: graphId, 
+        body: JSON.stringify({
+            game_id: gameId,
+            graph_id: graphId,
             node_id: nodeId,
             pebble_id: pebbleId
         })

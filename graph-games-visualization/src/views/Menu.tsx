@@ -3,7 +3,6 @@ import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
 import { Title, Subtitle } from "../components/ui/Titles";
 
-// root endpoint, routes the user to the specific game mode or instructions
 function Menu() {
     const navigate = useNavigate();
 
@@ -13,7 +12,7 @@ function Menu() {
 
             <Card>
                 <Subtitle className="mb-8">Which game do you want to play?</Subtitle>
-                
+
                 <div className="flex flex-col w-full gap-4">
                     <Button onClick={() => navigate('/ef-menu')}>
                         EF Game

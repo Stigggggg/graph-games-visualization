@@ -5,7 +5,6 @@ import EFGame from './views/EFGame';
 import PebblesMenu from './views/PebblesMenu';
 import PebblesGame from './views/PebblesGame';
 
-// app component, contains the router that generates a specific view for every endpoint
 function App() {
     return (
         <BrowserRouter>

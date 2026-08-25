@@ -3,12 +3,14 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "./Button";
 import { Subtitle } from "./Titles";
 
+// 1 history log visible on the right, types define the log style
 export type HistoryEntry = {
     id: number;
     text: string | ReactNode;
     type: "system" | "spoiler" | "duplicator" | "error" | "success";
 }
 
+// base game properties
 interface BaseGameProps {
     title: string;
     dashboard: ReactNode;
@@ -26,37 +28,43 @@ export function BaseGame ({ title, dashboard, status, controls, g1Title, g1Graph
     const navigate = useNavigate();
     const historyRef = useRef<HTMLDivElement>(null);
 
+    // reacts to every change in history array
+    // smoothly renders latest state
     useEffect(() => {
         if (historyRef.current) {
-            historyRef.current.scrollIntoView({ 
+            historyRef.current.scrollIntoView({
                 behavior: "smooth"
             });
         }
-    }, [history]);
+    }, [history]); // runs when there is a change in history
 
     return (
         <div className="w-full h-screen bg-slate-50 flex flex-col xl:flex-row overflow-hidden">
+            {/* main part - game boards */}
             <div className="flex-1 flex justify-center items-center p-4 xl:p-6 overflow-hidden">
                 <div className="flex flex-col items-center gap-3 w-full max-w-5xl box-border">
                     <Subtitle className="text-3xl mb-1">{title}</Subtitle>
-
+                    {/* panel with rounds, pebbles, score */}
                     <div className='flex flex-col items-center bg-white py-3 px-6 rounded-2xl w-full max-w-4xl shadow-md border-t-4 border-blue-500'>
                         {dashboard}
                     </div>
 
+                    {/* additional controls, for example pebble choice menu */}
                     {controls}
 
+                    {/* container for 2 graphs */}
                     <div className="flex flex-col md:flex-row gap-4 w-full max-w-6xl justify-center mt-2">
                         <div className="text-center w-full flex flex-col items-center">
-                            <Subtitle className="mb-1 text-lg">{g1Title}</Subtitle>
+                            <Subtitle className="mb-2 text-lg">{g1Title}</Subtitle>
                             {g1Graph}
                         </div>
                         <div className="text-center w-full flex flex-col items-center">
-                            <Subtitle className="mb-2">{g2Title}</Subtitle>
+                            <Subtitle className="mb-2 text-lg">{g2Title}</Subtitle>
                             {g2Graph}
                         </div>
                     </div>
 
+                    {/* lower panel with exit buttons */}
                     <div className="w-full max-w-md mt-3">
                         {status === 'game_over' ? (
                             <Button
@@ -65,18 +73,19 @@ export function BaseGame ({ title, dashboard, status, controls, g1Title, g1Graph
                             >
                                 Back to menu / Play again
                             </Button>
-                        ): (
+                        ) : (
                             <Button
                                 onClick={() => navigate("/")}
                                 className="bg-gray-500 hover:bg-gray-600"
                             >
                                 Exit game
-                            </Button>  
+                            </Button>
                         )}
                     </div>
                 </div>
             </div>
 
+            {/* right side - history panel that chooses entry style based on entry type */}
             {history && (
                 <div className="w-full xl:w-[350px] shrink-0 flex flex-col bg-white border-l-2 border-gray-200 shadow-2xl h-[30vh] xl:h-screen">
                     <div className="bg-slate-100 border-b border-gray-200 p-4 font-bold text-gray-700 flex items-center justify-center shadow-sm z-10 uppercase tracking-wider text-sm">
@@ -97,7 +106,7 @@ export function BaseGame ({ title, dashboard, status, controls, g1Title, g1Graph
                         ))}
                         <div ref={historyRef} />
                     </div>
-                </div> 
+                </div>
             )}
         </div>
     );

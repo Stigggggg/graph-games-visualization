@@ -1,6 +1,7 @@
 import cytoscape from 'cytoscape';
 import { useEffect, useRef } from 'react';
 
+// properties for Graph component, which is operating on ready graph data and metadata from game
 export interface GraphProps {
   data: any[];
   color: string;
@@ -18,6 +19,8 @@ const pebble_colors: Record<string, string> = {
   '5': '#34495e'
 };
 
+// returns SVG image code, which represents the pebble
+// it enables SVG to render pebbles without exterior graphic files
 const getPebbleSvg = (pebbleId: string) => {
   const bgColor = pebble_colors[pebbleId] || '#95a5a6';
   const svg = `
@@ -28,6 +31,7 @@ const getPebbleSvg = (pebbleId: string) => {
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg.trim())}`;
 }
 
+// badges generator - who and in which round played the node
 const getBadgeSvg = (player: string, round: number) => {
   const isSpoiler = player === 'spoiler';
   const emoji = isSpoiler ? '😈' : '👼';
@@ -50,14 +54,18 @@ export function Graph({ data, color, selectedNodes = [], pebbles, nodeDetails, n
     'c': '#9b59b6'
   };
 
-  useEffect(() => { 
+  // click synchronizing with the board
+  useEffect(() => {
       nodeClickRef.current = nodeClick;
   }, [nodeClick]);
-  
+
   useEffect(() => {
     const hasPos = data.some((element: any) => element.position !== undefined)
-    if (!cyContainerRef.current) return;
-    
+    if (!cyContainerRef.current) {
+      return;
+    }
+
+    // cytoscape core initialization
     const cy = cytoscape({
       container: cyContainerRef.current,
       elements: data,
@@ -73,7 +81,7 @@ export function Graph({ data, color, selectedNodes = [], pebbles, nodeDetails, n
             'width': '45px',
             'height': '45px',
             'font-size': '14px',
-            'transition-property': 'background-color', 
+            'transition-property': 'background-color',
             'transition-duration': 0.2
           }
         },
@@ -105,6 +113,7 @@ export function Graph({ data, color, selectedNodes = [], pebbles, nodeDetails, n
 
     cyInstanceRef.current = cy;
 
+    // player interaction handling, specifically node selection changes its color
     cy.on('tap', 'node', async (e) => {
         const node = e.target;
         const nodeId = node.id();
@@ -116,15 +125,18 @@ export function Graph({ data, color, selectedNodes = [], pebbles, nodeDetails, n
             }
         }
     });
-    
+
+    // destructor, prevents memory leaks
     return () => {
       cy.destroy();
     };
   }, [data, color]);
 
+  // active after every move, cleanup without destroying the board
   useEffect(() => {
       if (cyInstanceRef.current) {
           const cy = cyInstanceRef.current;
+          // removing previous state and markings
           cy.nodes().removeClass('selected');
           cy.nodes().style({
             'background-image': 'none'
@@ -132,20 +144,23 @@ export function Graph({ data, color, selectedNodes = [], pebbles, nodeDetails, n
           cy.nodes().forEach(node => {
               node.style('label', node.data('id'));
           });
-          
+
+          // marking taken nodes in EF game
           selectedNodes.forEach(nodeId => {
               cy.getElementById(nodeId).addClass('selected');
           });
-          
+
+          // adding pebble graphics
           if (pebbles) {
             const pebblesByNode: Record<string, string[]> = {};
+            // checking if a node contains more than 1 pebble
             Object.entries(pebbles).forEach(([pebbleId, nodeId]) => {
               if (!pebblesByNode[nodeId]) {
                 pebblesByNode[nodeId] = [];
               }
               pebblesByNode[nodeId].push(pebbleId);
             });
-
+            // pebbles are placed in node corners - up left, bottom right, etc.
             Object.entries(pebblesByNode).forEach(([nodeId, pebbleIds]) => {
               const node = cy.getElementById(nodeId);
               if (node.length > 0) {
@@ -163,6 +178,8 @@ export function Graph({ data, color, selectedNodes = [], pebbles, nodeDetails, n
               }
             });
           }
+
+          // adding badges that inform who and when took the node
           if (nodeDetails) {
             Object.entries(nodeDetails).forEach(([nodeId, detail]) => {
                 const node = cy.getElementById(nodeId);
@@ -170,12 +187,12 @@ export function Graph({ data, color, selectedNodes = [], pebbles, nodeDetails, n
                     const bgImage = getBadgeSvg(detail.player, detail.round);
                     node.style({
                         'background-image': bgImage,
-                        'background-position-x': '50%', 
+                        'background-position-x': '50%',
                         'background-position-y': '-26px',
                         'background-width': '35px',
                         'background-height': '35px',
                         'background-clip': 'none',
-                        'bounds-expansion': 30 
+                        'bounds-expansion': 30
                     });
                 }
             });

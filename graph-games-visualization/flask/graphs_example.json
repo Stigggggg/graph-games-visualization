@@ -1,0 +1,28 @@
+{
+    "g1": {
+      "nodes": [
+        { "id": "v1", "color": "a", "position": { "x": 200, "y": 50 } },
+        { "id": "v2", "color": "c", "position": { "x": 350, "y": 200 } },
+        { "id": "v3", "color": "b", "position": { "x": 200, "y": 350 } },
+        { "id": "v4", "color": "b", "position": { "x": 50, "y": 200 } }
+      ],
+      "edges": [
+        { "source": "v2", "target": "v2" },
+        { "source": "v3", "target": "v3" },
+        { "source": "v3", "target": "v4" }
+      ]
+    },
+    "g2": {
+      "nodes": [
+        { "id": "u1", "color": "a", "position": { "x": 200, "y": 50 } },
+        { "id": "u2", "color": "b", "position": { "x": 350, "y": 200 } },
+        { "id": "u3", "color": "a", "position": { "x": 200, "y": 350 } },
+        { "id": "u4", "color": "a", "position": { "x": 50, "y": 200 } }
+      ],
+      "edges": [
+        { "source": "u1", "target": "u2" },
+        { "source": "u1", "target": "u3" },
+        { "source": "u3", "target": "u3" }
+      ]
+    }
+  }

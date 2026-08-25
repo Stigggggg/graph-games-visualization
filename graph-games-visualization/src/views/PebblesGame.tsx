@@ -31,18 +31,18 @@ function PebblesGame() {
     const [history, setHistory] = useState<HistoryEntry[]>([{
        id: 1,
        text: "Game generated! Waiting for the first move...",
-       type: "system" 
+       type: "system"
     }]);
     const [analysisData, setAnalysisData] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [analysisError, setAnalysisError] = useState("");
-    
+
     if (!state) {
         return (
             <div className='flex flex-col items-center gap-4 p-10'>
                 <h2 className='text-2xl font-bold text-red-500'>No game generated!</h2>
-                <button 
-                    onClick={() => navigate('/pebbles-menu')} 
+                <button
+                    onClick={() => navigate('/pebbles-menu')}
                     className='px-4 py-2 bg-blue-500 text-white rounded'
                 >
                     Back to settings
@@ -57,7 +57,7 @@ function PebblesGame() {
         if (status === 'game_over') {
             return title;
         }
-        
+
         if (turn === 'duplicator') {
             if (playerGraph === graphId) {
                 return `${title} (Spoiler)`;
@@ -112,7 +112,7 @@ function PebblesGame() {
 
         try {
            const data = await PebbleMove(state.game_id, graphId, nodeId, active);
-           
+
            if (data.error) {
                 setError(data.error);
                 setHistory(prev => [...prev, {
@@ -122,7 +122,7 @@ function PebblesGame() {
                 }]);
                 return false;
            }
-           
+
            const nextDetailsG1 = {...detailsG1};
            const nextDetailsG2 = {...detailsG2};
            if (graphId === "g1") {
@@ -140,7 +140,7 @@ function PebblesGame() {
                 if (turn === "spoiler") {
                     nextTurn = "duplicator";
                 }
-                
+
                 const activePebbleStr = String(active);
                 if (data.p1 && data.p1[activePebbleStr] && !nextDetailsG1[data.p1[activePebbleStr]]) {
                     nextDetailsG1[data.p1[activePebbleStr]] = {
@@ -201,7 +201,7 @@ function PebblesGame() {
                     setRound(prev => prev + 1);
                 }
            }
-           
+
            return true;
         } catch (e: any) {
             setError(e.message || "Invalid move or server error!");
@@ -219,9 +219,9 @@ function PebblesGame() {
             <div className='flex gap-2 items-center bg-white shadow-sm border border-gray-200 py-2 px-4 rounded-xl'>
                 <span className='font-bold text-gray-700 mr-2 text-sm'>Select Pebble:</span>
                 {Array.from({length: state.k}, (_, i) => i + 1).map(num => (
-                    <button 
-                        key={num} 
-                        onClick={() => setActive(num)} 
+                    <button
+                        key={num}
+                        onClick={() => setActive(num)}
                         className={`w-8 h-8 font-bold rounded-full border-2 transition-all duration-200 ${active === num ? 'bg-purple-500 text-white border-purple-700 scale-110 shadow-md' : 'bg-gray-100 border-gray-300 text-gray-600 hover:bg-gray-200'}`}
                     >
                         {num}
@@ -239,7 +239,7 @@ function PebblesGame() {
                 </div>
                 {status === "playing" && (
                     <div className="flex items-center gap-2 text-lg font-bold text-gray-700">
-                        Turn: 
+                        Turn:
                         <span className={`flex items-center gap-1 ${turn === "spoiler" ? "text-red-500" : "text-blue-500"}`}>
                             {turn === "spoiler" ? " 😈 SPOILER" : "👼 DUPLICATOR"}
                         </span>

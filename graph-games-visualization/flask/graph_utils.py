@@ -1,7 +1,7 @@
 import random
 import networkx as nx
 
-# generates a NetworkX random directed graph 
+# generates a NetworkX random directed graph
 def generate_nx_graph(n, m):
     G = nx.DiGraph()
     colors = ['a', 'b', 'c']
@@ -12,7 +12,7 @@ def generate_nx_graph(n, m):
 
     for node in nodes:
         G.add_node(node, color=random.choice(colors))
-    
+
     added_edges = 0
     while added_edges < m:
         u = random.choice(nodes)
@@ -22,7 +22,7 @@ def generate_nx_graph(n, m):
             # edges identified by source->target pairs
             G.add_edge(u, v, color=edge_color)
             added_edges += 1
-    
+
     return G
 
 # modification of a function above, parses a .json file to a NetworkX directed graph (used in file and draw mode)
@@ -76,11 +76,13 @@ def parse_to_cytoscape(G):
                'source': u,
                'target': v,
                'color': data.get('color', 'a')
-           } 
+           }
         })
-    
+
     return elements
 
+# builds a graph based on a template
+# if no template is given, edges are randomly generated
 def build_custom_graph(data):
     n = int(data.get('n', 5))
     edges = data.get('edges')

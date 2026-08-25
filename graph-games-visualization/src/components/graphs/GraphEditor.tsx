@@ -3,23 +3,23 @@ import { useEffect, useRef, useState } from "react";
 
 export interface GraphEditorProps {
     onUpdate: (elements: any[]) => void;
-    prefix: string;
+    prefix: string; // 'v' for G1, 'u' for G2
 }
 
-// Graph component is read-only, here we can modify the structure, not only work on given data
 export function GraphEditor({ onUpdate, prefix }: GraphEditorProps) {
     const cyContainerRef = useRef<HTMLDivElement>(null);
     const cyInstanceRef = useRef<cytoscape.Core | null>(null);
-    const nodeIdCounter = useRef(1); // what number will the next vertice receive
-    const selectedNode = useRef<string | null>(null);
-    const [activeColor, setActiveColor] = useState<'a' | 'b' | 'c'>('a'); // which color was chosen
-    const colorRef = useRef(activeColor); // keeping track of the color without reloading the board
+    const nodeIdCounter = useRef(1); // unique ids for vertices
+    const selectedNode = useRef<string | null>(null); // which node was taken for a new edge
+    // color managing
+    const [activeColor, setActiveColor] = useState<'a' | 'b' | 'c'>('a');
+    const colorRef = useRef(activeColor);
     const colors = {
         'a': '#e74c3c',
         'b': '#e84393',
         'c': '#9b59b6'
     };
-    
+
     useEffect(() => {
         colorRef.current = activeColor;
     }, [activeColor]);
@@ -29,10 +29,9 @@ export function GraphEditor({ onUpdate, prefix }: GraphEditorProps) {
             return;
         }
 
-        // empty graph object
         const cy = cytoscape({
             container: cyContainerRef.current,
-            elements: [],
+            elements: [], // editor starts as empty canvas
             style: [
                 {
                     selector: 'node',
@@ -45,7 +44,7 @@ export function GraphEditor({ onUpdate, prefix }: GraphEditorProps) {
                         'width': '45px',
                         'height': '45px',
                         'font-size': '14px',
-                        'transition-property': 'background-color', 
+                        'transition-property': 'background-color',
                         'transition-duration': 0.2
                     }
                 },
@@ -74,11 +73,10 @@ export function GraphEditor({ onUpdate, prefix }: GraphEditorProps) {
 
         cyInstanceRef.current = cy;
 
+        // handling editor actions
         cy.on('tap', (event) => {
             const target = event.target;
-            // event 1: clicking on the background -> creating a vertice
-            // a vertice receives its new id and color, its data and position are read
-            // it is added to the nodes group in cytoscape
+            // empty canvas was clicked, we add a new node in draw mode
             if (target === cy) {
                 const newId = `${prefix}${nodeIdCounter.current}`;
                 nodeIdCounter.current++;
@@ -91,26 +89,27 @@ export function GraphEditor({ onUpdate, prefix }: GraphEditorProps) {
                     cy.getElementById(selectedNode.current).removeClass('selected');
                     selectedNode.current = null;
                 }
-            } else if (target.isNode()) { // event 2: clicking on a node means that we create an edge
+            } else if (target.isNode()) { // existing node was slicked
                 const clicked = target.id();
-                // source is chosen
-                if (!selectedNode.current) {
+                if (!selectedNode.current) { // no source node was chosen, this one will be source node
                     selectedNode.current = clicked;
                     target.addClass('selected');
-                } else { // target is chosen
-                    if (selectedNode.current !== clicked) {
+                } else {
+                    if (selectedNode.current !== clicked) { // source node is chosen, we clicked the target one
                         const edgeId = `${selectedNode.current}->${clicked}`;
-                        if (cy.getElementById(edgeId).length === 0) {
+                        if (cy.getElementById(edgeId).length === 0) { // two identic edges cannot exist
                             cy.add({
                                 group: 'edges',
                                 data: { id: edgeId, source: selectedNode.current, target: clicked, color: 'a' }
                             });
                         }
                     }
+                    // cleanupt
                     cy.getElementById(selectedNode.current).removeClass('selected');
-                    selectedNode.current = null;   
+                    selectedNode.current = null;
                 }
             }
+            // after every action we take actual state, change it into JSON and send to BaseMenu
             const elements = cy.elements().map(e => e.json());
             onUpdate(elements);
         });
@@ -118,7 +117,7 @@ export function GraphEditor({ onUpdate, prefix }: GraphEditorProps) {
         return () => cy.destroy();
     }, [prefix]);
 
-    // graph drawing menu
+    // editor for drawing mode with color choices
     return (
         <div className="flex flex-col items-center">
             <div className="flex gap-4 mb-3">
@@ -130,7 +129,7 @@ export function GraphEditor({ onUpdate, prefix }: GraphEditorProps) {
             </div>
 
             <div className="text-sm text-gray-500 mb-1">Click background to add node. Click two nodes to add edge.</div>
-            
+
             <div ref={cyContainerRef} className="w-full max-w-[400px] h-[300px] border-2 border-dashed border-gray-400 bg-gray-50 rounded-xl relative cursor-crosshair" />
         </div>
     );

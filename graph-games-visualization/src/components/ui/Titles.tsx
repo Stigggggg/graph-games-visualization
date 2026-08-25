@@ -1,11 +1,13 @@
 import React from "react";
 
-// ReactNode - accepts any valid React element as children for component composition
+// Interface defining the properties for titles and subtitles
+
 export interface TitleProps {
-    children: React.ReactNode;
-    className?: string;
+    children: React.ReactNode; // text to display
+    className?: string; // possibility to add custom CSS classes
 }
 
+// Main title component
 export function Title({ children, className="" }: TitleProps) {
     return (
         <h1 className={`text-5xl md:text-6xl font-extrabold text-blue-600 tracking-tight ${className}`}>
@@ -14,6 +16,7 @@ export function Title({ children, className="" }: TitleProps) {
     );
 }
 
+// Secondary title component, used for section titles and graph labels
 export function Subtitle({ children, className="" }: TitleProps) {
     return (
         <h2 className={`text-2xl font-bold text-gray-800 ${className}`}>

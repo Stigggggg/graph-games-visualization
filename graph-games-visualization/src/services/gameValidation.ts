@@ -1,3 +1,4 @@
+// basic menu attributes, both EF and Pebbles games should have them
 export interface BaseMenuState {
     source: string,
     vertices: number | "";
@@ -8,6 +9,7 @@ export interface BaseMenuState {
     mode: string;
 }
 
+// simple random graph validation, if no vertices or edges are given, it throws an error
 export const validateRandom = (vertices: number | "", edges: number | "", settings: any) => {
     if (vertices === "" || edges === "") {
         throw new Error("Please insert the number of vertices and edges!");
@@ -19,6 +21,7 @@ export const validateRandom = (vertices: number | "", edges: number | "", settin
     return settings;
 };
 
+// similar file validation, uses file.text() to extract file content
 export const validateFile = async(file: File | null, settings: any) => {
     if (!file) {
         throw new Error("Please upload a file!");
@@ -30,10 +33,11 @@ export const validateFile = async(file: File | null, settings: any) => {
     } catch (e) {
         throw new Error("Invalid format, upload a valid JSON!");
     }
-    
+
     return settings;
 };
 
+// helper function created to format Cytoscape elements into backend schema
 const formatGraph = (elements: any[]) => ({
     nodes: elements.filter(e => e.group === "nodes").map(e => ({
         data: e.data,
@@ -45,6 +49,7 @@ const formatGraph = (elements: any[]) => ({
     }))
 });
 
+// draw validation formats drawn graphs to a file format, because it will behave the same in backend
 export const validateDraw = (drawnG1: any[], drawnG2: any[], settings: any) => {
     if (drawnG1.length === 0 || drawnG2.length === 0) {
         throw new Error("Please draw both graphs!");

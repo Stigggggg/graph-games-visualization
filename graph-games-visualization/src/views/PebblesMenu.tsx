@@ -7,12 +7,13 @@ import { type BaseMenuState } from "../services/gameValidation";
 import { GraphSelector } from "../components/ui/GraphSelector";
 import { generateTemplate, type GraphTemplate } from "../services/graphGenerating";
 
+// similar to EFMenu, extending BaseMenu
 function PebblesMenu() {
     const navigate = useNavigate();
-    const [pebbles, setPebbles] = useState<number | "">("");
+    const [pebbles, setPebbles] = useState<number | "">(""); // no rounds, pebbles
     const [g1Type, setG1Type] = useState<GraphTemplate>("random");
     const [g2Type, setG2Type] = useState<GraphTemplate>("random");
-    
+
     const handleStart = async (baseState: BaseMenuState) => {
         const n = Number(baseState.vertices) || 5;
         const m = Number(baseState.edges) || 0;
@@ -24,7 +25,7 @@ function PebblesMenu() {
             g2: { type: g2Type, n: n, m: m, edges: g2Edges },
         };
         const data = await PebblesGameSession(enhancedState, pebbles);
-        
+
         navigate("/pebbles", {
             state: {
                 game_id: data.game_id,
@@ -33,7 +34,7 @@ function PebblesMenu() {
                 k: pebbles,
                 mode: baseState.mode
             }
-        }); 
+        });
     };
 
     return (
@@ -42,7 +43,7 @@ function PebblesMenu() {
                 <GraphSelector title="Graph 1 type:" value={g1Type} onChange={setG1Type} />
                 <GraphSelector title="Graph 2 type:" value={g2Type} onChange={setG2Type} />
             </div>
-            
+
             <Label>
                 Number of pebbles (k):
                 <Input
