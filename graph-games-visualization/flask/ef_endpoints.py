@@ -89,7 +89,6 @@ def move():
         }), 400
 
     if game['turn'] == 'spoiler':
-
         game['spoiler_choice_graph'] = graph_id
 
         if graph_id == 'g1':

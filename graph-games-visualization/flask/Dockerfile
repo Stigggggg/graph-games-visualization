@@ -6,7 +6,7 @@ COPY requirements.txt .
 
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY app.py graph_utils.py game_logic.py ./
+COPY app.py graph_utils.py game_logic.py ef_endpoints.py pebbles_endpoints.py store.py ./
 
 EXPOSE 5000
 
