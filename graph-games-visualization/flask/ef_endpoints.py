@@ -97,6 +97,7 @@ def move():
             game['moves_g2'].append(node_id)
 
         if game['mode'] == 'ai':
+            game['turn'] = 'duplicator'
             ai_node, ai_graph = get_move(game)
 
             if ai_graph == 'g1':
