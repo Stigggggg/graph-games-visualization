@@ -28,25 +28,22 @@ export function BaseGame ({ title, dashboard, status, controls, g1Title, g1Graph
     const navigate = useNavigate();
     const historyRef = useRef<HTMLDivElement>(null);
 
+    // reacts to every change in history array
+    // smoothly renders latest state
     useEffect(() => {
         if (historyRef.current) {
             historyRef.current.scrollIntoView({
                 behavior: "smooth"
             });
         }
-    }, [history]);
+    }, [history]); // runs when there is a change in history
 
     return (
-        // ZMIANA 1: Na małych i średnich ekranach zachowuje się jak normalna strona (min-h-screen),
-        // a dopiero na wielkich monitorach (xl) "blokuje" się jako aplikacja pełnoekranowa.
         <div className="w-full min-h-screen xl:h-screen bg-slate-50 flex flex-col xl:flex-row">
-            
             {/* main part - game boards */}
-            {/* ZMIANA 2: Dodano 'min-h-0', co naprawia bug Flexboxa i pozwala na scrollowanie lewej kolumny */}
             <div className="flex-1 min-h-0 flex flex-col items-center p-4 xl:p-6 overflow-y-auto">
                 <div className="flex flex-col items-center gap-3 w-full max-w-5xl box-border pb-12 xl:pb-24">
                     <Subtitle className="text-3xl mb-1">{title}</Subtitle>
-                    
                     {/* panel with rounds, pebbles, score */}
                     <div className='flex flex-col items-center bg-white py-3 px-6 rounded-2xl w-full max-w-4xl shadow-md border-t-4 border-blue-500'>
                         {dashboard}
@@ -88,7 +85,7 @@ export function BaseGame ({ title, dashboard, status, controls, g1Title, g1Graph
                 </div>
             </div>
 
-            {/* right side - history panel */}
+            {/* right side - history panel that chooses entry style based on entry type */}
             {history && (
                 <div className="w-full xl:w-[350px] shrink-0 flex flex-col bg-white border-t-2 xl:border-t-0 xl:border-l-2 border-gray-200 shadow-2xl h-[40vh] xl:h-screen">
                     <div className="bg-slate-100 border-b border-gray-200 p-4 font-bold text-gray-700 flex items-center justify-center shadow-sm z-10 uppercase tracking-wider text-sm">

@@ -7,7 +7,7 @@ export interface GraphProps {
   color: string;
   selectedNodes?: string[];
   pebbles?: Record<string, string>;
-  nodeDetails?: Record<string, { player: string; round: number }>;
+  nodeDetails?: Record<string, { player: string; round: number, pebble?: number }>;
   nodeClick?: (nodeId: string) => Promise<boolean> | void | boolean;
 }
 
@@ -32,11 +32,12 @@ const getPebbleSvg = (pebbleId: string) => {
 }
 
 // badges generator - who and in which round played the node
-const getBadgeSvg = (player: string, round: number) => {
+const getBadgeSvg = (player: string, round: number, pebble?: number) => {
   const isSpoiler = player === 'spoiler';
   const emoji = isSpoiler ? '😈' : '👼';
+  const label = pebble ? `R${round} P${pebble}` : `R${round}`;
   const svg = `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="40" height="40">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 40" width="60" height="40">
       <text x="50%" y="18" text-anchor="middle" font-size="20">${emoji}</text>
       <text x="50%" y="38" text-anchor="middle" fill="#000000" stroke="#ffffff" stroke-width="1" font-family="sans-serif" font-size="16" font-weight="900">R${round}</text>
     </svg>
@@ -184,15 +185,15 @@ export function Graph({ data, color, selectedNodes = [], pebbles, nodeDetails, n
             Object.entries(nodeDetails).forEach(([nodeId, detail]) => {
                 const node = cy.getElementById(nodeId);
                 if (node.length > 0) {
-                    const bgImage = getBadgeSvg(detail.player, detail.round);
+                    const bgImage = getBadgeSvg(detail.player, detail.round, detail.pebble);
                     node.style({
                         'background-image': bgImage,
                         'background-position-x': '50%',
                         'background-position-y': '-26px',
-                        'background-width': '35px',
+                        'background-width': '55px',
                         'background-height': '35px',
                         'background-clip': 'none',
-                        'bounds-expansion': 30
+                        'bounds-expansion': 40
                     });
                 }
             });

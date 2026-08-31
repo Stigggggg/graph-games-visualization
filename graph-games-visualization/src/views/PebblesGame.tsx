@@ -9,6 +9,7 @@ import { Button } from "../components/ui/Button";
 type NodeDetail = {
     player: string;
     round: number;
+    pebble?: number;
 }
 
 function PebblesGame() {
@@ -127,11 +128,11 @@ function PebblesGame() {
            const nextDetailsG2 = {...detailsG2};
            if (graphId === "g1") {
                nextDetailsG1[nodeId] = {
-                   player: turn, round
+                   player: turn, round, pebble: active
                };
            } else {
                nextDetailsG2[nodeId] = {
-                   player: turn, round
+                   player: turn, round, pebble: active
                };
            }
 
@@ -144,24 +145,24 @@ function PebblesGame() {
                 const activePebbleStr = String(active);
                 if (data.p1 && data.p1[activePebbleStr] && !nextDetailsG1[data.p1[activePebbleStr]]) {
                     nextDetailsG1[data.p1[activePebbleStr]] = {
-                        player: nextTurn, round
+                        player: nextTurn, round, pebble: active
                     }
                 }
                 if (data.p2 && data.p2[activePebbleStr] && !nextDetailsG2[data.p2[activePebbleStr]]) {
                     nextDetailsG2[data.p2[activePebbleStr]] = {
-                        player: nextTurn, round
+                        player: nextTurn, round, pebble: active
                     }
                 }
            } else if (turn === "duplicator") {
                 const activePebbleStr = String(active);
                 if (data.p1 && data.p1[activePebbleStr] && !nextDetailsG1[data.p1[activePebbleStr]]) {
                     nextDetailsG1[data.p1[activePebbleStr]] = {
-                        player: "duplicator", round
+                        player: "duplicator", round, pebble: active
                     }
                 }
                 if (data.p2 && data.p2[activePebbleStr] && !nextDetailsG2[data.p2[activePebbleStr]]) {
                     nextDetailsG2[data.p2[activePebbleStr]] = {
-                        player: "duplicator", round
+                        player: "duplicator", round, pebble: active
                     }
                 }
            }
