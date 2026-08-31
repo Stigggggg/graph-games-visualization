@@ -39,7 +39,7 @@ const getBadgeSvg = (player: string, round: number, pebble?: number) => {
   const svg = `
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 40" width="60" height="40">
       <text x="50%" y="18" text-anchor="middle" font-size="20">${emoji}</text>
-      <text x="50%" y="38" text-anchor="middle" fill="#000000" stroke="#ffffff" stroke-width="1" font-family="sans-serif" font-size="16" font-weight="900">R${round}</text>
+      <text x="50%" y="38" text-anchor="middle" fill="#000000" stroke="#ffffff" stroke-width="1" font-family="sans-serif" font-size="16" font-weight="900">${label}</text>
     </svg>
   `;
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg.trim())}`;
