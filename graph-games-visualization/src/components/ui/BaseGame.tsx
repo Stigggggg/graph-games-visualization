@@ -41,8 +41,10 @@ export function BaseGame ({ title, dashboard, status, controls, g1Title, g1Graph
     return (
         <div className="w-full h-screen bg-slate-50 flex flex-col xl:flex-row overflow-hidden">
             {/* main part - game boards */}
-            <div className="flex-1 flex justify-center items-center p-4 xl:p-6 overflow-hidden">
-                <div className="flex flex-col items-center gap-3 w-full max-w-5xl box-border">
+            {/* POPRAWKA 1: overflow-y-auto i flex-col zamiast sztywnego justify-center */}
+            <div className="flex-1 flex flex-col items-center p-4 xl:p-6 overflow-y-auto">
+                {/* POPRAWKA 2: dodanie my-auto dla inteligentnego centrowania w pionie */}
+                <div className="flex flex-col items-center gap-3 w-full max-w-5xl box-border my-auto">
                     <Subtitle className="text-3xl mb-1">{title}</Subtitle>
                     {/* panel with rounds, pebbles, score */}
                     <div className='flex flex-col items-center bg-white py-3 px-6 rounded-2xl w-full max-w-4xl shadow-md border-t-4 border-blue-500'>
@@ -65,7 +67,8 @@ export function BaseGame ({ title, dashboard, status, controls, g1Title, g1Graph
                     </div>
 
                     {/* lower panel with exit buttons */}
-                    <div className="w-full max-w-md mt-3">
+                    {/* POPRAWKA 3: dodanie mb-8 dla oddechu na samym dole scrolla */}
+                    <div className="w-full max-w-md mt-3 mb-8">
                         {status === 'game_over' ? (
                             <Button
                                 onClick={() => navigate(menuRoute)}
